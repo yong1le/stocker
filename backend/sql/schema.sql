@@ -18,10 +18,10 @@ CREATE TABLE Stocklist (
     public BOOLEAN
 );
 CREATE TABLE Stock (
-    symbol varchar(5) PRIMARY KEY, 
+    symbol varchar(5) PRIMARY KEY
 );
 CREATE TABLE Stockdata (
-    symbol varchar(5) REFERENCES Stock(sy), 
+    symbol varchar(5) REFERENCES Stock(symbol), 
     time_stamp date, 
     high real, 
     low real, 
