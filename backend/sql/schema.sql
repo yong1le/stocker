@@ -23,6 +23,7 @@ CREATE TABLE Stock (
 CREATE TABLE Stockdata (
     symbol varchar(5) REFERENCES Stock(symbol), 
     time_stamp date, 
+    open real,
     high real, 
     low real, 
     close real, 
