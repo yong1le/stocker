@@ -10,11 +10,11 @@ CREATE TABLE Folder (
     folder_name varchar(25)
 );
 CREATE TABLE Portolio (
-    pid int REFERENCES Folder(fid) NOT NULL, 
+    pid int REFERENCES Folder(fid) PRIMARY KEY, 
     amount float
 );
 CREATE TABLE Stocklist (
-    slid int REFERENCES Folder(fid) NOT NULL, 
+    slid int REFERENCES Folder(fid) PRIMARY KEY, 
     public BOOLEAN
 );
 CREATE TABLE Stock (
