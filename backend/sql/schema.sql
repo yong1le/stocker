@@ -39,3 +39,24 @@ CREATE TABLE Stockholding (
     symbol varchar(5)  REFERENCES Stock(symbol) NOT NULL, 
     share int NOT NULL
 );
+
+CREATE Table Friends (
+    uid1 VARCHAR(25) REFERENCES Useraccount(username),
+    uid2 VARCHAR(25) REFERENCES Useraccount(username),
+    friend_status BOOLEAN,
+    PRIMARY Key(uid1, uid2)
+);
+
+CREATE TABLE Shares(
+    creator VARCHAR(25) REFERENCES Useraccount(username),
+    shared_with VARCHAR(25) REFERENCES Useraccount(username),
+    slid int REFERENCES Stocklist(slid), 
+    PRIMARY KEY (creator, shared_with, slid)
+);
+
+CREATE TABLE Reviews(
+    reviewer VARCHAR(25) REFERENCES Useraccount(username),
+    slid int REFERENCES Stocklist(slid), 
+    content VARCHAR(4000),
+    PRIMARY KEY (reviewer, slid)
+);
