@@ -6,15 +6,15 @@ CREATE TABLE Useraccount (
     pass_word varchar(50)
 );
 CREATE TABLE Folder (
-    fid int PRIMARY KEY, 
+    fid SERIAL PRIMARY KEY, 
     folder_name varchar(25)
 );
-CREATE TABLE Portolio (
-    pid int REFERENCES Folder(fid) PRIMARY KEY, 
+CREATE TABLE Portfolio (
+    pid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
     amount float
 );
 CREATE TABLE Stocklist (
-    slid int REFERENCES Folder(fid) PRIMARY KEY, 
+    slid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
     public BOOLEAN
 );
 CREATE TABLE Stock (
