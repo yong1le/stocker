@@ -34,4 +34,4 @@ stock.get("/value/:symbol", async (req, res) => {
 });
 
 /** Past performance of a stock */
-portfolio.get("/performance/past/:symbol/:interval", async (req, res) => {});
+stock.get("/performance/past/:symbol/:interval", async (req, res) => {});
