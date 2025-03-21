@@ -276,7 +276,7 @@ portfolio.post("/buy", async (req, res) => {
       `
       SELECT close FROM (
         Stockdata s1 NATURAL JOIN (
-          SELECT s2.symbol, MAX(s2.time_stamp)
+          SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
           FROM Stockdata s2
           WHERE s2.symbol = $1
           GROUP BY symbol 
@@ -314,7 +314,58 @@ portfolio.post("/buy", async (req, res) => {
 });
 
 /** Gets the market value of the portfolio. That is, the cash + value of all stocks. */
-portfolio.get("/value/:username/:pid", async (req, res) => {});
+portfolio.get("/value/:username/:pid", async (req, res) => {
+  const username = req.params.username;
+  const pid = req.params.pid;
 
-/** Username updates their review for slid. */
-portfolio.get("/performance/past/:symbol/:interval", async (req, res) => {});
+  try {
+    if (
+      (
+        await query(
+          `
+          SELECT * FROM Creates
+          WHERE fid=$2 AND username=$1
+          `,
+          [username, pid]
+        )
+      ).rowCount == 0
+    )
+      throw Error(`${username} is not the creator of portfolio ${pid}`);
+
+    const result = await query(
+      `
+      SELECT pid, amount + SUM(value) AS value
+      FROM (
+        SELECT pid, amount, close * share as value
+        FROM (
+          (
+            (SELECT * FROM Portfolio WHERE pid = $1)
+            JOIN Stockholding
+            ON fid = pid
+          ) NATURAL JOIN
+          (
+            SELECT symbol, close FROM (
+              Stockdata s1 NATURAL JOIN (
+                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
+                FROM Stockdata s2
+                GROUP BY symbol 
+              )
+            )
+          )
+        )
+      )
+      GROUP BY pid, amount
+      `,
+
+      [pid]
+    );
+  
+    if (result.rowCount !== 1 || !result.rows[0].value)
+      throw Error("Could not get market value of portfolio");
+
+    res.json({ value: result.rows[0].value });
+  } catch (e) {
+    console.log(e);
+    res.json({ value: -1 }).status(400);
+  }
+});
