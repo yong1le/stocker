@@ -7,8 +7,6 @@ export const portfolio = Router();
 portfolio.post("/create", async (req, res) => {
   const { username, pname } = req.body;
 
-  console.log(username, pname);
-
   const client = await getClient();
   client.query("BEGIN");
   try {
@@ -20,11 +18,11 @@ portfolio.post("/create", async (req, res) => {
     `,
       [pname]
     );
-    if (result.rowCount === 0) throw Error;
+    if (result.rowCount === 0) throw Error("Failed to create folder");
 
     const fid = result.rows[0].fid;
 
-    if (!fid) throw Error;
+    if (!fid) throw Error("Failed to create folder");
 
     await client.query(
       `
@@ -43,7 +41,8 @@ portfolio.post("/create", async (req, res) => {
 
     client.query("COMMIT");
     res.json({ pid: fid });
-  } catch {
+  } catch (e) {
+    console.log(e);
     client.query("ROLLBACK");
     res.json({ pid: -1 }).status(400);
   } finally {
@@ -72,7 +71,8 @@ portfolio.get("/view/all/:username", async (req, res) => {
     );
 
     res.json(result.rows.map(({ folder_name }) => folder_name));
-  } catch {
+  } catch (e) {
+    console.log(e);
     res.json([]).status(404);
   }
 });
@@ -92,7 +92,21 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
       (SELECT * FROM Creates c WHERE username = $1 AND c.fid = $2)
       NATURAL JOIN Folder f JOIN Portfolio p ON f.fid = p.pid
       )
-      NATURAL LEFT JOIN Stockholding
+      NATURAL LEFT JOIN
+      (
+        SELECT fid, symbol, share, share * close AS value  FROM (
+          Stockholding NATURAL JOIN
+          (
+            SELECT symbol, close FROM (
+              Stockdata s1 NATURAL JOIN (
+                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
+                FROM Stockdata s2
+                GROUP BY symbol 
+              )
+            )
+          )
+        )
+      )
     )
     `,
       [username, pid]
@@ -107,7 +121,7 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
       amount: result.rows[0].amount,
       stocks: result.rows
         .filter(({ symbol, share }) => symbol !== null && share !== null)
-        .map(({ symbol, share }) => ({ symbol: symbol, share: share })),
+        .map(({ symbol, share, value }) => ({ symbol, share, value })),
     });
   } catch (e) {
     console.log(e);
@@ -133,10 +147,11 @@ portfolio.put("/withdraw/:username/:pid", async (req, res) => {
       [username, pid, amount]
     );
 
-    if (result.rowCount === 0) throw Error;
+    if (result.rowCount === 0) throw Error("Failed to update portfolio cash");
 
     res.json({ success: true });
-  } catch {
+  } catch (e) {
+    console.log(e);
     res.json({ success: false }).status(400);
   }
 });
@@ -223,10 +238,11 @@ portfolio.put("/deposit/:username/:pid", async (req, res) => {
       [username, pid, amount]
     );
 
-    if (result.rowCount === 0) throw Error;
+    if (result.rowCount === 0) throw Error("Failed to update portfolio cash");
 
     res.json({ success: true });
-  } catch {
+  } catch (e) {
+    console.log(e);
     res.json({ success: false }).status(400);
   }
 });
@@ -359,7 +375,7 @@ portfolio.get("/value/:username/:pid", async (req, res) => {
 
       [pid]
     );
-  
+
     if (result.rowCount !== 1 || !result.rows[0].value)
       throw Error("Could not get market value of portfolio");
 
