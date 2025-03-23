@@ -11,7 +11,8 @@ CREATE TABLE Folder (
 );
 CREATE TABLE Portfolio (
     pid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
-    amount float
+    amount float,
+    CHECK (amount >= 0)
 );
 CREATE TABLE Stocklist (
     slid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
@@ -37,7 +38,8 @@ CREATE TABLE Creates (
 CREATE TABLE Stockholding (
     fid int  REFERENCES Folder(fid) NOT NULL, 
     symbol varchar(5)  REFERENCES Stock(symbol) NOT NULL, 
-    share int NOT NULL
+    share int NOT NULL,
+    PRIMARY KEY (fid, symbol)
 );
 
 CREATE Table Friends (
