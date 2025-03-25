@@ -14,9 +14,11 @@ CREATE TABLE Portfolio (
     amount float,
     CHECK (amount >= 0)
 );
+CREATE TYPE vis_enum AS ENUM ('private', 'shared', 'public');
 CREATE TABLE Stocklist (
     slid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
-    public BOOLEAN
+    visibility vis_enum NOT NULL DEFAULT 'private'
+    -- public BOOLEAN DEFAULT FALSE
 );
 CREATE TABLE Stock (
     symbol varchar(5) PRIMARY KEY
@@ -59,6 +61,6 @@ CREATE TABLE Shares(
 CREATE TABLE Reviews(
     reviewer VARCHAR(25) REFERENCES Useraccount(username),
     slid int REFERENCES Stocklist(slid), 
-    content VARCHAR(4000),
+    content VARCHAR(4000) DEFAULT '',
     PRIMARY KEY (reviewer, slid)
 );

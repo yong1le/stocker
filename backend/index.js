@@ -2,6 +2,9 @@ import express from "express";
 import { portfolio } from "./routes/portfolio.js";
 import { user } from "./routes/user.js";
 import { stock } from "./routes/stock.js";
+import { friend } from "./routes/friend.js";
+import { stocklist } from "./routes/stocklist.js"
+
 const app = express();
 
 const port = process.env.PORT || "3000";
@@ -12,6 +15,8 @@ app.use(express.json());
 app.use("/portfolio", portfolio);
 app.use("/stock", stock);
 app.use("/user", user);
+app.use("/friend", friend);
+app.use("/stocklist", stocklist);
 
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
