@@ -48,13 +48,6 @@ stocklist.post('/create', async (req, res) => {
     `,
       [username, slid]
     );
-    // await client.query(
-    //   `
-    //   INSERT INTO shares
-    //   VALUES ($1, $2)
-    // `,
-    //   [username, slid]
-    // );
     client.query("COMMIT");
     res.json({ slid: slid });
   } catch (e) {
@@ -121,7 +114,7 @@ stocklist.post('/reviewcontent/:slid', async (req, res) => {
   }
 });
 
-//view all user accesible stock
+//view all user accesible stocklist
 stocklist.get('/view/all/:username', async (req, res) => {
   const username = req.params.username;
 
