@@ -40,7 +40,7 @@ CREATE TABLE Creates (
 CREATE TABLE Stockholding (
     fid int  REFERENCES Folder(fid) NOT NULL, 
     symbol varchar(5)  REFERENCES Stock(symbol) NOT NULL, 
-    share int NOT NULL,
+    share int NOT NULL CHECK (share > 0),
     PRIMARY KEY (fid, symbol)
 );
 
