@@ -22,6 +22,16 @@ backend/
   index.js
 ```
 
+Be in the `psql -h localhost -p 9999 -U postgres` prompt
+```sql
+\copy Stock(symbol) FROM './backend/stock.csv' DELIMITER ','
+CSV HEADER;
+
+\copy Stockdata(time_stamp, open, high,
+low, close, volume, symbol) FROM './backend/SP500History.csv' DELIMITER ','
+CSV HEADER;
+```
+
 ## Endpoints
 - register(username, password, fname, lname)
 - login(username, password)
