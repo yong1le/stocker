@@ -10,15 +10,18 @@ CREATE TABLE Folder (
     folder_name varchar(25)
 );
 CREATE TABLE Portfolio (
-    pid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
+    pid SERIAL PRIMARY KEY, 
     amount float,
-    CHECK (amount >= 0)
+    CHECK (amount >= 0),
+    FOREIGN KEY (pid) REFERENCES Folder(fid)
+        ON DELETE CASCADE
 );
 CREATE TYPE vis_enum AS ENUM ('private', 'shared', 'public');
 CREATE TABLE Stocklist (
-    slid SERIAL REFERENCES Folder(fid) PRIMARY KEY, 
-    visibility vis_enum NOT NULL DEFAULT 'private'
-    -- public BOOLEAN DEFAULT FALSE
+    slid SERIAL PRIMARY KEY, 
+    visibility vis_enum NOT NULL DEFAULT 'private',
+    FOREIGN KEY (slid) REFERENCES Folder(fid)
+        ON DELETE CASCADE
 );
 CREATE TABLE Stock (
     symbol varchar(5) PRIMARY KEY
@@ -35,7 +38,9 @@ CREATE TABLE Stockdata (
 );
 CREATE TABLE Creates (
     username varchar(25)  REFERENCES Useraccount(username) NOT NULL, 
-    fid int  REFERENCES Folder(fid) NOT NULL
+    fid int NOT NULL,
+    FOREIGN KEY (fid) REFERENCES Folder(fid)
+        ON DELETE CASCADE
 );
 CREATE TABLE Stockholding (
     fid int  REFERENCES Folder(fid) NOT NULL, 
