@@ -50,6 +50,35 @@ portfolio.post("/create", async (req, res) => {
   }
 });
 
+portfolio.delete("/delete/:username/:fid", async (req, res) => {
+  const username = req.params.username;
+  const fid = req.params.fid;
+
+  const client = await getClient();
+  client.query("BEGIN");
+  try {
+    const result = await client.query(
+      `
+      DELETE FROM folder
+      WHERE fid=$2 AND EXISTS (
+        SELECT fid from Creates WHERE fid = $2 AND username = $1
+      )
+    `,
+      [username, fid]
+    );
+    if (result.rowCount === 0) throw Error("Failed to delete folder");
+
+    client.query("COMMIT");
+    res.json({ success: true });
+  } catch (e) {
+    console.log(e);
+    client.query("ROLLBACK");
+    res.json({ success: false }).status(400);
+  } finally {
+    client.release();
+  }
+});
+
 /** Username views all portfolios created by them. */
 portfolio.get("/view/all/:username", async (req, res) => {
   const username = req.params.username;
@@ -57,7 +86,7 @@ portfolio.get("/view/all/:username", async (req, res) => {
   try {
     const result = await query(
       `
-      SELECT folder_name FROM
+      SELECT fid, folder_name FROM
       (
         (
           (SELECT fid FROM Creates WHERE username = $1)
@@ -70,7 +99,12 @@ portfolio.get("/view/all/:username", async (req, res) => {
       [username]
     );
 
-    res.json(result.rows.map(({ folder_name }) => folder_name));
+    res.json(
+      result.rows.map(({ fid, folder_name }) => ({
+        pid: fid,
+        name: folder_name,
+      }))
+    );
   } catch (e) {
     console.log(e);
     res.json([]).status(404);
@@ -115,9 +149,40 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
     if (result.rowCount === 0)
       throw Error("This porfolio does not belong to this user.");
 
+    const mv = await query(
+      `
+      SELECT pid, amount + COALESCE(SUM(value),0) AS value
+      FROM (
+        SELECT pid, amount, close * share as value
+        FROM (
+          (
+            (SELECT * FROM Portfolio WHERE pid = $1)
+            LEFT JOIN Stockholding
+            ON fid = pid
+          ) NATURAL LEFT JOIN
+          (
+            SELECT symbol, close FROM (
+              Stockdata s1 NATURAL JOIN (
+                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
+                FROM Stockdata s2
+                GROUP BY symbol 
+              )
+            )
+          )
+        )
+      )
+      GROUP BY pid, amount
+      `,
+
+      [pid]
+    );
+
+    if (mv.rowCount === 0) throw Error("Failed to get market value.");
+
     res.json({
       pid: result.rows[0].pid,
-      folder_name: result.rows[0].folder_name,
+      name: result.rows[0].folder_name,
+      value: mv.rows[0].value || 0,
       amount: result.rows[0].amount,
       stocks: result.rows
         .filter(({ symbol, share }) => symbol !== null && share !== null)
@@ -277,7 +342,7 @@ portfolio.post("/buy", async (req, res) => {
       WHERE fid = $1 AND symbol = $2
       `,
         [pid, symbol, shares]
-      ).rowCount) === 0
+      )).rowCount === 0
     ) {
       await client.query(
         `
