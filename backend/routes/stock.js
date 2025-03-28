@@ -3,6 +3,27 @@ import { query, getClient } from "../db/index.js";
 
 export const stock = Router();
 
+stock.get("/all", async (req, res) => {
+  try {
+    const result = await query(
+      `
+        SELECT symbol, close AS value FROM (
+          Stockdata s1 NATURAL JOIN (
+            SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
+            FROM Stockdata s2
+            GROUP BY symbol 
+          )
+        )
+      `
+    );
+
+    res.json(result.rows.map(({ symbol, value }) => ({ symbol, value })));
+  } catch (e) {
+    console.log(e);
+    res.json({ value: -1 }).status(400);
+  }
+});
+
 /** Market Value of a stock */
 stock.get("/value/:symbol", async (req, res) => {
   const symbol = req.params.symbol;
@@ -14,6 +35,7 @@ stock.get("/value/:symbol", async (req, res) => {
           Stockdata s1 NATURAL JOIN (
             SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
             FROM Stockdata s2
+            WHERE symbol=$1
             GROUP BY symbol 
           )
         )
@@ -55,12 +77,11 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
       [symbol, interval]
     );
 
-    if (res.rowCount === 0)
-      throw Error("Failed to fetch stock data")
+    if (res.rowCount === 0) throw Error("Failed to fetch stock data");
 
-    res.json(result.rows)
+    res.json(result.rows);
   } catch (e) {
     console.log(e);
-    res.json([]).status(400)
+    res.json([]).status(400);
   }
 });

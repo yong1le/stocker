@@ -3,6 +3,7 @@ import React from "react";
 import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Card, CardTitle } from "@/components/ui/card";
 
 const PortfolioListPage = async () => {
   const user = await getUserServer();
@@ -30,12 +31,17 @@ const PortfolioListPage = async () => {
   const portfolios = await getPortfolios(user);
 
   return (
-    <div className="flex flex-col gap-2">
-      {portfolios && portfolios.map((e) => (
-        <Link key={e.name} href={`/portfolio/${e.pid}`}>
-          {e.name}
-        </Link>
-      ))}
+    <div className="flex flex-col gap-2 m-2 items-start">
+      {portfolios &&
+        portfolios.map((e) => (
+          <Card key={e.name} className="p-2">
+            <CardTitle className="text-3xl">
+              <Link href={`/portfolio/${e.pid}`}>
+                {e.name} - ${Number(e.amount).toFixed(2)}
+              </Link>
+            </CardTitle>
+          </Card>
+        ))}
     </div>
   );
 };

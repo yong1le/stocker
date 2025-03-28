@@ -1,6 +1,8 @@
 import React from "react";
 import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
+import { Card, CardTitle } from "@/components/ui/card";
+import PortfolioBuyAction from "./_components/buy";
 
 const PortfolioView = async ({ params }) => {
   const pid = (await params).pid;
@@ -28,28 +30,54 @@ const PortfolioView = async ({ params }) => {
     return json;
   };
 
+  const getStocks = async () => {
+    const res = await fetch("http://localhost:8080/stock/all", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) return [];
+
+    return await res.json();
+  };
+
   const portfolio = await getPortfolioInfo(user, pid);
-  console.log(portfolio);
+  const stocks = await getStocks();
 
   return (
-    <div>
-      {(portfolio !== null) && (
-        <div>
-          <h1>
-            {portfolio.name} - ${portfolio.value}
-          </h1>
-          <p>Cash: ${portfolio.amount}</p>
-          <div className="flex flex-col gap-2">
-            {portfolio.stocks && portfolio.stocks.map((e, i) => (
-              <span className="flex flex-row gap-2" key={i}>
-                <p>{e.symbol}</p>
-                <p>{e.share}</p>
-                <p>{e.value}</p>
-              </span>
-            ))}
+    <div className="m-5 flex flex-row gap-5">
+      <Card className="p-4 flex-2">
+        {portfolio !== null && (
+          <div className="flex flex-col gap-3">
+            <CardTitle className="text-4xl">
+              {portfolio.name} - ${Number(portfolio.value).toFixed(2)}
+            </CardTitle>
+            <div>
+              <p>Cash: ${Number(portfolio.amount).toFixed(2)}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {portfolio.stocks &&
+                portfolio.stocks.map((e, i) => (
+                  <Card
+                    className="flex flex-row gap-2 items-start justify-between p-4"
+                    key={i}
+                  >
+                    <CardTitle>{e.symbol}</CardTitle>
+                    <div className="flex flex-col gap-2">
+                      <p>Shares: {e.share}</p>
+                      <p>Total value: {Number(e.value).toFixed(2)}</p>
+                    </div>
+                  </Card>
+                ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Card>
+      <Card className="p-4">
+        <PortfolioBuyAction username={user} pid={pid} stocks={stocks}/>
+      </Card>
     </div>
   );
 };

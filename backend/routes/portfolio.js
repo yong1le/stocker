@@ -86,7 +86,7 @@ portfolio.get("/view/all/:username", async (req, res) => {
   try {
     const result = await query(
       `
-      SELECT fid, folder_name FROM
+      SELECT fid, folder_name, amount FROM
       (
         (
           (SELECT fid FROM Creates WHERE username = $1)
@@ -100,9 +100,10 @@ portfolio.get("/view/all/:username", async (req, res) => {
     );
 
     res.json(
-      result.rows.map(({ fid, folder_name }) => ({
+      result.rows.map(({ fid, folder_name, amount }) => ({
         pid: fid,
         name: folder_name,
+        amount: amount
       }))
     );
   } catch (e) {
@@ -149,6 +150,7 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
     if (result.rowCount === 0)
       throw Error("This porfolio does not belong to this user.");
 
+    // Get the market value
     const mv = await query(
       `
       SELECT pid, amount + COALESCE(SUM(value),0) AS value
@@ -391,62 +393,5 @@ portfolio.post("/buy", async (req, res) => {
     res.json({ success: false });
   } finally {
     client.release();
-  }
-});
-
-/** Gets the market value of the portfolio. That is, the cash + value of all stocks. */
-portfolio.get("/value/:username/:pid", async (req, res) => {
-  const username = req.params.username;
-  const pid = req.params.pid;
-
-  try {
-    if (
-      (
-        await query(
-          `
-          SELECT * FROM Creates
-          WHERE fid=$2 AND username=$1
-          `,
-          [username, pid]
-        )
-      ).rowCount == 0
-    )
-      throw Error(`${username} is not the creator of portfolio ${pid}`);
-
-    const result = await query(
-      `
-      SELECT pid, amount + SUM(value) AS value
-      FROM (
-        SELECT pid, amount, close * share as value
-        FROM (
-          (
-            (SELECT * FROM Portfolio WHERE pid = $1)
-            JOIN Stockholding
-            ON fid = pid
-          ) NATURAL JOIN
-          (
-            SELECT symbol, close FROM (
-              Stockdata s1 NATURAL JOIN (
-                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-                FROM Stockdata s2
-                GROUP BY symbol 
-              )
-            )
-          )
-        )
-      )
-      GROUP BY pid, amount
-      `,
-
-      [pid]
-    );
-
-    if (result.rowCount !== 1 || !result.rows[0].value)
-      throw Error("Could not get market value of portfolio");
-
-    res.json({ value: result.rows[0].value });
-  } catch (e) {
-    console.log(e);
-    res.json({ value: -1 }).status(400);
   }
 });
