@@ -3,6 +3,8 @@ import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import { Card, CardTitle } from "@/components/ui/card";
 import PortfolioBuyAction from "./_components/buy";
+import PortfolioDepositAction from "./_components/deposit";
+import PortfolioWithdrawalAction from "./_components/withdrawal";
 
 const PortfolioView = async ({ params }) => {
   const pid = (await params).pid;
@@ -30,6 +32,25 @@ const PortfolioView = async ({ params }) => {
     return json;
   };
 
+  const getPortfolios = async (username) => {
+    const res = await fetch(
+      `http://localhost:8080/portfolio/view/all/${username}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!res.ok) {
+      window.alert("Failed to get portfolios");
+      return [];
+    }
+
+    return await res.json();
+  };
+
   const getStocks = async () => {
     const res = await fetch("http://localhost:8080/stock/all", {
       headers: {
@@ -44,6 +65,7 @@ const PortfolioView = async ({ params }) => {
 
   const portfolio = await getPortfolioInfo(user, pid);
   const stocks = await getStocks();
+  const portfolios = await getPortfolios(user);
 
   return (
     <div className="m-5 flex flex-row gap-5">
@@ -76,7 +98,17 @@ const PortfolioView = async ({ params }) => {
         )}
       </Card>
       <Card className="p-4">
-        <PortfolioBuyAction username={user} pid={pid} stocks={stocks}/>
+        <PortfolioBuyAction username={user} pid={pid} stocks={stocks} />
+        <PortfolioDepositAction
+          username={user}
+          pid={pid}
+          portfolios={portfolios}
+        />
+        <PortfolioWithdrawalAction
+          username={user}
+          pid={pid}
+          portfolios={portfolios}
+        />
       </Card>
     </div>
   );

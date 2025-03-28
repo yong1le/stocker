@@ -31,7 +31,7 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
   const buyStockAction = async (data) => {
     const shares = data.get("shares");
 
-    const success = buyStock(selectedStock, shares, username, pid);
+    const success = await buyStock(selectedStock, shares, username, pid);
 
     if (!success) window.alert("Failed to buy stocks");
     else router.refresh();
