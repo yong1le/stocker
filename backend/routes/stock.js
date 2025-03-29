@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { query, getClient } from "../db/index.js";
+import { SLR } from "ml-regression";
+// import linearRegession from "ml-regression"
 
 export const stock = Router();
 
@@ -42,6 +44,7 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
   5 years: 1825
   */
   const interval = req.params.interval;
+  console.log(symbol, interval);
 
   try {
     const result = await query(
@@ -64,3 +67,51 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
     res.json([]).status(400)
   }
 });
+
+/** ALL performance of a stock */
+
+
+/** Predict future stock values for the next 5 years */
+stock.get("/prediction/:symbol", async (req, res) => {
+  const symbol = req.params.symbol;
+  const futureIntervals = [365, 730, 1095, 1460, 1825]; // 1 to 5 years
+
+  try {
+    const result = await query(
+      `
+      SELECT EXTRACT(EPOCH FROM time_stamp) AS timestamp, close
+      FROM Stockdata
+      WHERE symbol = $1
+      ORDER BY time_stamp ASC
+      `,
+      [symbol]
+    );
+
+    // if (result.rowCount < 2) throw new Error("Not enough data for prediction");
+
+    // Extract time (X) and close price (Y)
+    const timestamps = result.rows.map(row => row.timestamp);
+    const closePrices = result.rows.map(row => row.close);
+
+    // Normalize timestamps (convert to days since first record)
+    const minTimestamp = timestamps[0];
+    const X = timestamps.map(t => (t - minTimestamp) / 86400); // Convert seconds to days
+    const Y = closePrices;
+
+    const regression = new SLR(X, Y);
+
+    const lastRecordedTime = (timestamps[timestamps.length - 1] - minTimestamp) / 86400;
+    const predictions = futureIntervals.map(days => ({
+      days,
+      predictedValue: regression.predict(lastRecordedTime + days)
+    }));
+
+    res.json({ symbol, predictions });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ error: "Failed to predict stock values" });
+  }
+});
+
+
+

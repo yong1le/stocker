@@ -53,7 +53,7 @@ stocklist.post('/create', async (req, res) => {
   } catch (e) {
     console.log(e);
     client.query("ROLLBACK");
-    res.json({ pid: -1 }).status(400);
+    res.json({ slid: -1 }).status(400);
   } finally {
     client.release();
   }
@@ -302,3 +302,62 @@ stocklist.post('/create/review/:slid', async (req, res) => {
   }
 });
 
+
+/** Username adds shares of stock into stocklist */
+stocklist.post("/add", async (req, res) => {
+  const { username, slid, symbol, shares } = req.body;
+  const client = await getClient();
+
+  await client.query("BEGIN");
+  try {
+    // Make sure username is the creator of slid
+    if (
+      (
+        await client.query(
+          `
+      SELECT * FROM Creates
+      WHERE username=$1 AND fid=$2
+      `,
+          [username, slid]
+        )
+      ).rowCount == 0
+    )
+      throw Error(`${username} is not the creator of stocklist ${slid}`);
+
+      const userstock = await client.query(
+        `
+      SELECT * from Stockholding
+      WHERE fid = $1 AND symbol = $2
+      `,
+        [slid, symbol]
+      )
+    // Check if this stocklist already holds the share
+    if (userstock.rowCount === 0)  {
+      await client.query(
+        `
+      INSERT INTO Stockholding
+      VALUES ($1, $2, $3)
+      `,
+        [slid, symbol, shares]
+      );
+    }  else {
+      await client.query(
+        `
+      UPDATE Stockholding
+      SET share = share + $3
+      WHERE fid = $1 AND symbol = $2
+      `,
+        [slid, symbol, shares]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    await client.query("ROLLBACK");
+    res.json({ success: false });
+  } finally {
+    client.release();
+  }
+});
