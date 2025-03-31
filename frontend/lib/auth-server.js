@@ -47,3 +47,7 @@ export const getUserServer = async () => {
   const cookieStore = await cookies();
   return cookieStore.get("user")?.value;
 };
+
+export const logoutUser = async () => {
+  cookies().delete("user");
+};

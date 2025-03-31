@@ -1,4 +1,5 @@
-import { getUserServer } from "@/lib/auth-server";
+import { Button } from "@/components/ui/button";
+import { getUserServer, logoutUser } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
@@ -8,5 +9,10 @@ export default async function Home() {
     redirect("/login");
   }
 
-  return <div>Hello, {user}</div>;
+  return (
+    <div>
+      Hello, {user.name}
+      <Button onClick={logoutUser}>Logout</Button>
+    </div>
+  );
 }

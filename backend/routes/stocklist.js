@@ -136,7 +136,7 @@ stocklist.get('/view/all/:username', async (req, res) => {
       throw Error("No stocklists found or you have none.");
     }
 
-    // res.json(result.rows.map(({ folder_name }) => folder_name));
+    res.json(result.rows.map(({ slid, folder_name }) => ({slid: slid, name: folder_name})));
     res.json(result.rows.map(({ slid }) => slid));
   } catch (e) {
     console.log(e);

@@ -4,13 +4,10 @@ import { query, getClient } from "../db/index.js";
 
 export const friend = Router();
 
-friend.get("/", (req, res) => {
-  res.send("Hello World from /friend!");
-});
-
 // Send a friend request
-friend.post("/sendrequest", async (req, res) => {
-  const { username, friend } = req.body; // uid1 sends request to uid2
+friend.post("/sendrequest/:username", async (req, res) => {
+  const username = req.params.username;
+  const { friend } = req.body; // uid1 sends request to uid2
   try {
 
     const existingFriendship = await query(
@@ -71,8 +68,11 @@ friend.post("/sendrequest", async (req, res) => {
 });
 
 // Accept a friend request
-friend.post("/accept", async (req, res) => {
-  const { username, friend  } = req.body; // username accepts friend request from friend
+friend.post("/accept/:username", async (req, res) => {
+  const username = req.params.username;
+  const { friend } = req.body; // username accepts friend request from friend
+  console.log("in herer", username, friend);
+
   try {
     const result = await query(
       `
@@ -96,8 +96,9 @@ friend.post("/accept", async (req, res) => {
 });
 
 // Reject a friend request
-friend.post("/reject", async (req, res) => {
-  const { username, friend  } = req.body; // username reject friend request from friend
+friend.post("/reject/:username", async (req, res) => {
+  const username = req.params.username;
+  const { friend   } = req.body; // username reject friend request from friend
 
   try {
     const result = await query(
@@ -119,6 +120,66 @@ friend.post("/reject", async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 });
+
+//view all request for user
+friend.get("/view/requests/in/:username", async (req, res) => {
+  const username = req.params.username;
+  const client = await getClient();
+  
+  try {
+    const result = await client.query(
+      `
+      SELECT uid1 as requester
+      FROM friends
+      WHERE uid2 = $1 AND friend_status = false
+      `,
+      [username]
+    );
+
+    if (result.rowCount === 0) {
+      return res.json({ message: "No pending friend requests." });
+    }
+
+    const requests = result.rows.map(row => row.requester);
+    res.json( requests );
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({ error: "Failed to retrieve friend requests" });
+  } finally {
+    client.release();
+  }
+});
+
+//view all request from user
+friend.get("/view/requests/out/:username", async (req, res) => {
+  const username = req.params.username;
+  const client = await getClient();
+  
+  try {
+    const result = await client.query(
+      `
+      SELECT uid2 as requester
+      FROM friends
+      WHERE uid1 = $1 AND friend_status = false
+      `,
+      [username]
+    );
+
+    if (result.rowCount === 0) {
+      return res.json({ message: "No pending friend requests." });
+    }
+
+    const requests = result.rows.map(row => row.requester);
+    console.log(requests);
+    res.json( requests );
+  } catch (e) {
+    console.log(e);
+    res.status(400).json({ error: "Failed to retrieve friend requests" });
+  } finally {
+    client.release();
+  }
+});
+
 
 //view all friends to user
 friend.get('/view/all/:username', async (req, res) => {
@@ -146,5 +207,31 @@ friend.get('/view/all/:username', async (req, res) => {
     res.status(400).json({ error: "Failed to retrieve friends" });
   } finally {
     client.release();
+  }
+});
+
+// Reject a friend request
+friend.post("/remove/:username", async (req, res) => {
+  const username = req.params.username;
+  const { friend   } = req.body; // username reject friend request from friend
+
+  try {
+    const result = await query(
+      `
+      DELETE FROM friends
+      WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1) AND friend_status = true
+      RETURNING *
+      `,
+      [username, friend]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ message: "No pending friend found to reject." });
+    }
+
+    res.json({ message: "Friend request removed." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error." });
   }
 });
