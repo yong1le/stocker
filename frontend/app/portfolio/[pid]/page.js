@@ -5,6 +5,9 @@ import { Card, CardTitle } from "@/components/ui/card";
 import PortfolioBuyAction from "./_components/buy";
 import PortfolioDepositAction from "./_components/deposit";
 import PortfolioWithdrawalAction from "./_components/withdrawal";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import StockHolding from "@/components/stockholding";
 
 const PortfolioView = async ({ params }) => {
   const pid = (await params).pid;
@@ -82,22 +85,21 @@ const PortfolioView = async ({ params }) => {
             <div className="flex flex-col gap-2">
               {portfolio.stocks &&
                 portfolio.stocks.map((e, i) => (
-                  <Card
-                    className="flex flex-row gap-2 items-start justify-between p-4"
+                  <StockHolding
                     key={i}
-                  >
-                    <CardTitle>{e.symbol}</CardTitle>
-                    <div className="flex flex-col gap-2">
-                      <p>Shares: {e.share}</p>
-                      <p>Total value: {Number(e.value).toFixed(2)}</p>
-                    </div>
-                  </Card>
+                    symbol={e.symbol}
+                    shares={e.share}
+                    value={e.value}
+                  />
                 ))}
             </div>
           </div>
         )}
       </Card>
       <Card className="p-4">
+        <Link href={`/portfolio/${pid}/transactions`}>
+          <Button>Transactions</Button>
+        </Link>
         <PortfolioBuyAction username={user} pid={pid} stocks={stocks} />
         <PortfolioDepositAction
           username={user}

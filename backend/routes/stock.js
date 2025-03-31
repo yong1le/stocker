@@ -1,4 +1,4 @@
-import { Router } from "express";
+import e, { Router } from "express";
 import { query, getClient } from "../db/index.js";
 import { SLR } from "ml-regression";
 // import linearRegession from "ml-regression"
@@ -66,7 +66,6 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
   5 years: 1825
   */
   const interval = req.params.interval;
-  console.log(symbol, interval);
 
   try {
     const result = await query(
@@ -75,14 +74,16 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
     FROM Stockdata
     WHERE symbol = $1
     AND time_stamp >= NOW() - ($2 || ' days')::INTERVAL
-    ORDER BY time_stamp DESC
+    ORDER BY time_stamp ASC
     `,
       [symbol, interval]
     );
 
     if (res.rowCount === 0) throw Error("Failed to fetch stock data");
 
-    res.json(result.rows);
+    res.json(
+      result.rows.map(({ time_stamp, close }) => ({ time_stamp, close }))
+    );
   } catch (e) {
     console.log(e);
     res.json([]).status(400);
@@ -91,11 +92,9 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
 
 /** ALL performance of a stock */
 
-
 /** Predict future stock values for the next 5 years */
 stock.get("/prediction/:symbol", async (req, res) => {
   const symbol = req.params.symbol;
-  const futureIntervals = [365, 730, 1095, 1460, 1825]; // 1 to 5 years
 
   try {
     const result = await query(
@@ -111,19 +110,20 @@ stock.get("/prediction/:symbol", async (req, res) => {
     // if (result.rowCount < 2) throw new Error("Not enough data for prediction");
 
     // Extract time (X) and close price (Y)
-    const timestamps = result.rows.map(row => row.timestamp);
-    const closePrices = result.rows.map(row => row.close);
+    const timestamps = result.rows.map((row) => row.timestamp);
+    const closePrices = result.rows.map((row) => row.close);
 
     // Normalize timestamps (convert to days since first record)
     const minTimestamp = timestamps[0];
-    const X = timestamps.map(t => (t - minTimestamp) / 86400); // Convert seconds to days
+    const X = timestamps.map((t) => (t - minTimestamp) / 86400); // Convert seconds to days
     const Y = closePrices;
 
     const regression = new SLR(X, Y);
 
-    const lastRecordedTime = (timestamps[timestamps.length - 1] - minTimestamp) / 86400;
-    const predictions = futureIntervals.map(days => ({
-      days,
+    const lastRecordedTime = X[X.length - 1];
+    const lastRecordedTimestamp = Number(timestamps[timestamps.length - 1])
+    const predictions = Array.from({length: 365}, (_, days) => ({
+      time_stamp: lastRecordedTimestamp + days * 86400,
       predictedValue: regression.predict(lastRecordedTime + days)
     }));
 
@@ -133,6 +133,3 @@ stock.get("/prediction/:symbol", async (req, res) => {
     res.status(400).json({ error: "Failed to predict stock values" });
   }
 });
-
-
-
