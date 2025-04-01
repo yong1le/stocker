@@ -21,33 +21,34 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { buyStock } from "../server-actions";
+import { sellStock } from "../server-actions";
 import { useRouter } from "next/navigation";
 
-const PortfolioBuyAction = ({ username, pid, stocks }) => {
+const PortfolioSellAction = ({ username, pid, stocks }) => {
   const router = useRouter();
   const [selectedStock, setSelectedStock] = useState(null);
 
-  const buyStockAction = async (data) => {
+  const sellStockAction = async (data) => {
     const shares = data.get("shares");
 
-    const success = await buyStock(selectedStock, shares, username, pid);
+    const success = await sellStock(selectedStock, shares, username, pid);
 
-    if (!success) window.alert("Failed to buy stocks");
+    if (!success) window.alert("Failed to sell stocks");
     else router.refresh();
   };
+
 
   return (
     <div>
       <Dialog>
         <DialogTrigger asChild>
-          <Button>Buy</Button>
+          <Button>Sell</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
-          <form action={buyStockAction}>
+          <form action={sellStockAction}>
             <DialogHeader>
-              <DialogTitle>Buy Stocks</DialogTitle>
-              <DialogDescription>Choose a stock to buy</DialogDescription>
+              <DialogTitle>Sell Stocks</DialogTitle>
+              <DialogDescription>Choose a stock to sell</DialogDescription>
             </DialogHeader>
 
             <Select onValueChange={setSelectedStock}>
@@ -55,11 +56,11 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
                 <SelectValue placeholder="Select stock" />
               </SelectTrigger>
               <SelectContent>
-                  {stocks.map((e) => (
-                    <SelectItem key={e.symbol} value={e.symbol}>
-                      {e.symbol} - ${e.value}
-                    </SelectItem>
-                  ))}
+                {stocks.map((e) => (
+                  <SelectItem key={e.symbol} value={e.symbol}>
+                    {e.symbol} - ${e.close} - {e.share} shares
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -71,7 +72,7 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
             </div>
 
             <DialogFooter>
-              <Button type="submit">Buy</Button>
+              <Button type="submit">Sell</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -80,4 +81,4 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
   );
 };
 
-export default PortfolioBuyAction;
+export default PortfolioSellAction;

@@ -75,7 +75,7 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
               <div className="flex items-center">
                 <Label htmlFor="amount">Amount</Label>
               </div>
-              <Input id="amount" type="number" name="amount" required />
+              <Input id="amount" type="number" name="amount" required min={1} />
             </div>
 
             <DialogFooter>
