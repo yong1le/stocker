@@ -103,7 +103,7 @@ portfolio.get("/view/all/:username", async (req, res) => {
       result.rows.map(({ fid, folder_name, amount }) => ({
         pid: fid,
         name: folder_name,
-        amount: amount,
+        amount: Number(amount.toFixed(2)),
       }))
     );
   } catch (e) {
@@ -129,7 +129,7 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
       )
       NATURAL LEFT JOIN
       (
-        SELECT fid, symbol, share, share * close AS value  FROM (
+        SELECT fid, symbol, share, share * close AS value, close  FROM (
           Stockholding NATURAL JOIN
           (
             SELECT symbol, close FROM (
@@ -184,11 +184,16 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
     res.json({
       pid: result.rows[0].pid,
       name: result.rows[0].folder_name,
-      value: mv.rows[0].value || 0,
-      amount: result.rows[0].amount,
+      value: Number(Number(mv.rows[0].value || 0).toFixed(2)),
+      amount: Number(result.rows[0].amount.toFixed(2)),
       stocks: result.rows
         .filter(({ symbol, share }) => symbol !== null && share !== null)
-        .map(({ symbol, share, value }) => ({ symbol, share, value })),
+        .map(({ symbol, share, value, close }) => ({
+          symbol,
+          share,
+          value: Number(value.toFixed(2)),
+          close: Number(close.toFixed(2)),
+        })),
     });
   } catch (e) {
     console.log(e);
@@ -501,13 +506,12 @@ portfolio.delete("/sell", async (req, res) => {
       throw Error(`${pid} does not have holdings for ${symbol}`);
 
     let result;
-    if (holding.rows[0].share === shares)
+    if (holding.rows[0].share == shares)
       result = await client.query(
         `
         DELETE FROM Stockholding
         WHERE fid = $1 AND symbol = $2
-      `
-        ,
+      `,
         [pid, symbol]
       );
     else
@@ -585,9 +589,11 @@ portfolio.get("/transactions/:username/:pid", async (req, res) => {
   try {
     const result = await query(
       `
-    SELECT pid, transaction_type, amount, other_pid, stock_symbol, stock_shares, time_stamp FROM (
-      Transaction t JOIN Creates c
-      ON t.pid = c.fid AND c.username = $1
+    SELECT transaction_type, amount, other_pid, folder_name AS other_portfolio, stock_symbol, stock_shares, time_stamp FROM (
+      (
+        Transaction t JOIN Creates c
+        ON t.pid = c.fid AND c.username = $1
+      ) JOIN Folder f ON other_pid = f.fid
     )
     WHERE pid = $2
     `,

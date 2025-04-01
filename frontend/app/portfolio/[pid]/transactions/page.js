@@ -1,13 +1,19 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { getUserServer } from '@/lib/auth-server';
-import Link from 'next/link';
-import React from 'react'
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getUserServer } from "@/lib/auth-server";
+import Link from "next/link";
+import React from "react";
 
 const TransactionsPage = async ({ params }) => {
   const pid = (await params).pid;
-    const user = await getUserServer();
-    if (!user) redirect("/login");
+  const user = await getUserServer();
+  if (!user) redirect("/login");
 
   const getTransactions = async (username, pid) => {
     const res = await fetch(
@@ -20,14 +26,14 @@ const TransactionsPage = async ({ params }) => {
       }
     );
 
-     if (!res.ok) {
-       window.alert(`Failed to get transactions for ${pid}`);
-       return [];
-     }
-    
+    if (!res.ok) {
+      window.alert(`Failed to get transactions for ${pid}`);
+      return [];
+    }
+
     const json = await res.json();
     return json;
-  }
+  };
 
   const transactions = await getTransactions(user, pid);
   return (
@@ -44,11 +50,27 @@ const TransactionsPage = async ({ params }) => {
                 <p>Amount: {e.amount}</p>
                 {e.transaction_type === "bank" && <p>Transfer to bank</p>}
                 {e.transaction_type === "transfer" && (
-                  <p>Transfer to portfolio {e.other_pid}</p>
+                  <p>
+                    Transfer to{" "}
+                    <Link
+                      href={`/portfolio/${e.other_pid}`}
+                      className="underline"
+                    >
+                      {e.other_portfolio}
+                    </Link>
+                  </p>
                 )}
                 {e.transaction_type === "stock" && (
                   <div>
-                    <p>Stock: {e.stock_symbol}</p>
+                    <p>
+                      Stock:{" "}
+                      <Link
+                        href={`/stock/${e.stock_symbol}`}
+                        className="underline"
+                      >
+                        {e.stock_symbol}
+                      </Link>
+                    </p>
                     <p>
                       Shares {e.amount > 0 ? "Sold" : "Bought"}:{" "}
                       {e.stock_shares}
@@ -62,6 +84,6 @@ const TransactionsPage = async ({ params }) => {
       </div>
     </div>
   );
-}
+};
 
-export default TransactionsPage
+export default TransactionsPage;

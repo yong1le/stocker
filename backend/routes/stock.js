@@ -70,10 +70,18 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
   try {
     const result = await query(
       `
-    SELECT time_stamp, symbol, close
+    WITH LastDate AS (
+      SELECT MAX(time_stamp) as last_date
+      FROM Stockdata
+      WHERE symbol = $1
+    )  
+    SELECT EXTRACT(EPOCH FROM time_stamp) AS time_stamp, symbol, close
     FROM Stockdata
     WHERE symbol = $1
-    AND time_stamp >= NOW() - ($2 || ' days')::INTERVAL
+    AND time_stamp >= (
+      SELECT last_date - ($2 || ' days')::INTERVAL
+      FROM LastDate
+    ) 
     ORDER BY time_stamp ASC
     `,
       [symbol, interval]
@@ -90,12 +98,11 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
   }
 });
 
-/** ALL performance of a stock */
-
 /** Predict future stock values for the next 5 years */
-stock.get("/prediction/:symbol", async (req, res) => {
+stock.get("/prediction/:symbol/:interval", async (req, res) => {
   const symbol = req.params.symbol;
-
+  const interval = req.params.interval;
+  console.log(interval);
   try {
     const result = await query(
       `
@@ -121,15 +128,62 @@ stock.get("/prediction/:symbol", async (req, res) => {
     const regression = new SLR(X, Y);
 
     const lastRecordedTime = X[X.length - 1];
-    const lastRecordedTimestamp = Number(timestamps[timestamps.length - 1])
-    const predictions = Array.from({length: 365}, (_, days) => ({
-      time_stamp: lastRecordedTimestamp + days * 86400,
-      predictedValue: regression.predict(lastRecordedTime + days)
+    const lastRecordedTimestamp = Number(timestamps[timestamps.length - 1]);
+    const predictions = Array.from({ length: Number(interval) }, (_, days) => ({
+      time_stamp: lastRecordedTimestamp + (days + 2) * 86400,
+      predictedValue: regression.predict(lastRecordedTime + days + 2),
     }));
 
     res.json({ symbol, predictions });
   } catch (e) {
     console.error(e);
     res.status(400).json({ error: "Failed to predict stock values" });
+  }
+});
+
+stock.get("/statistic/:symbol/:interval", async (req, res) => {
+  const symbol = req.params.symbol;
+  const interval = req.params.interval;
+
+  try {
+    const result = await query(
+      `
+      WITH
+      Single AS (
+        SELECT symbol, time_stamp, close FROM stockdata
+        WHERE symbol = $1
+      ),
+      Market AS (
+        SELECT symbol, time_stamp, close FROM stockdata
+        WHERE symbol != $1
+      ),
+      LastDate AS (
+        SELECT MAX(time_stamp) as last_date
+        FROM Stockdata
+        WHERE symbol = $1
+      )  
+      SELECT s.symbol, corr(m.close, s.close) AS beta, stddev(s.close) / avg(s.close) AS cov
+      FROM
+      Market m JOIN Single s
+      ON m.time_stamp = s.time_stamp
+      WHERE s.time_stamp >= (
+        SELECT last_date - ($2 || ' days')::INTERVAL
+        FROM LastDate
+      ) 
+      GROUP BY s.symbol;
+      `,
+      [symbol, interval]
+    );
+
+    if (result.rowCount === 0)
+      throw Error(`Failed to calculate statistics for ${symbol}`);
+
+    return res.json({
+      cov: Number(result.rows[0].cov.toFixed(2)),
+      beta: Number(result.rows[0].beta.toFixed(2))
+    });
+  } catch (e) {
+    console.log(e);
+    res.json({}).status(400);
   }
 });

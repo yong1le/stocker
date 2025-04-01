@@ -8,7 +8,14 @@ import {
 } from "@/components/ui/chart";
 import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { AreaChart, Area, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ReferenceLine,
+} from "recharts";
 
 const chartConfig = {
   time_stamp: {
@@ -19,10 +26,6 @@ const chartConfig = {
     label: "Price",
     color: "#60a5fa",
   },
-  future: {
-    label: "Future",
-    color: "#ff0000",
-  },
 };
 
 const shortFormat = new Intl.DateTimeFormat("en-US", {
@@ -32,80 +35,114 @@ const shortFormat = new Intl.DateTimeFormat("en-US", {
 const Stock = () => {
   const symbol = useParams().symbol;
 
-  const [interval, setInterval] = useState(3650);
-  const [pastData, setPastData] = useState([]);
-  const [futurePerformance, setFuturePerformance] = useState([]);
+  const [interval, setInterval] = useState(1825);
   const [chartData, setChartData] = useState([]);
+  const [lastHistorialDate, setLastHistorialDate] = useState(null);
+  const [statistic, setStatistic] = useState(null);
 
-  const getPastData = async (symbol, interval) => {
-    const res = await fetch(
-      `http://localhost:8080/stock/performance/past/${symbol}/${interval}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!res.ok) {
-      window.alert("Failed to fetch data");
-      return [];
-    }
-
-    return await res.json();
-  };
-
-  const getFutureData = async (symbol) => {
-    const res = await fetch(
-      `http://localhost:8080/stock/prediction/${symbol}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!res.ok) {
-      window.alert("Failed to fetch data");
-      return [];
-    }
-
-    return (await res.json()).predictions;
-  };
-
-  useEffect(() => {
-    getFutureData(symbol).then((data) => {
-      setFuturePerformance(
-        data.map((e) => {
-          return {
-            time_stamp: e.time_stamp * 1000,
-            future: Number(e.predictedValue).toFixed(2),
-          };
-        })
+  const getData = async (symbol, interval) => {
+    try {
+      const pastRes = await fetch(
+        `http://localhost:8080/stock/performance/past/${symbol}/${interval}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
-    });
-  }, []);
+
+      if (!pastRes.ok) {
+        window.alert("Failed to fetch data");
+        return [];
+      }
+
+      const futureRes = await fetch(
+        `http://localhost:8080/stock/prediction/${symbol}/${interval / 2}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!futureRes.ok) {
+        window.alert("Failed to fetch data");
+        return [];
+      }
+
+      const pastData = (await pastRes.json()).map((e) => {
+        return {
+          time_stamp: shortFormat.format(e.time_stamp * 1000),
+          close: Number(Number(e.close).toFixed(2)),
+        };
+      });
+      const futureData = (await futureRes.json()).predictions.map((e) => {
+        return {
+          time_stamp: shortFormat.format(e.time_stamp * 1000),
+          close: Number(Number(e.predictedValue).toFixed(2)),
+        };
+      });
+
+      return {
+        date: pastData[pastData.length - 1].time_stamp,
+        data: [...pastData, ...futureData].sort(
+          (a, b) => new Date(a.time_stamp) <= new Date(b.time_stamp)
+        ),
+      };
+    } catch (e) {
+      window.alert(e);
+      return [];
+    }
+  };
+
+  const getStatistics = async (symbol, interval) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/stock/statistic/${symbol}/${interval}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!res.ok) {
+        return {};
+      }
+
+      return await res.json();
+    } catch (e) {
+      console.log(e);
+      return {};
+    }
+  };
 
   useEffect(() => {
-    getPastData(symbol, interval).then((data) => {
-      setPastData(data);
+    getData(symbol, interval).then((data) => {
+      setLastHistorialDate(data.date);
+      setChartData(data.data);
     });
+
+    getStatistics(symbol, interval).then((data) => {
+      setStatistic(data);
+    })
   }, [interval]);
-
-  useEffect(() => {
-    setChartData(
-      [...pastData, ...futurePerformance].sort(
-        (a, b) => a.time_stamp <= b.time_stamp
-      )
-    );
-  }, [pastData, futurePerformance])
 
   return (
     <div className="p-4">
-      <h1 className="font-bold text-4xl">{symbol}</h1>
-      {(
+      <div className="mb-4">
+        <h1 className="font-bold text-4xl">{symbol}</h1>
+        {statistic && (
+          <div>
+            <p>Stock COV: {statistic.cov}</p>
+            <p>Stock Beta: {statistic.beta}</p>
+          </div>
+        )}
+      </div>
+
+      {
         <ChartContainer config={chartConfig}>
           <AreaChart
             accessibilityLayer
@@ -121,10 +158,6 @@ const Stock = () => {
               tickLine={false}
               axisLine={true}
               tickMargin={8}
-              tickFormatter={(value) => {
-                console.log(value, shortFormat.format(new Date(value)));
-                return shortFormat.format(new Date(value));
-              }}
             />
             <YAxis tickLine={false} axisLine={false} tickMargin={8} />
             <ChartTooltip
@@ -139,24 +172,23 @@ const Stock = () => {
               stroke="var(--color-close)"
               connectNulls
             />
-            <Area
-              dataKey="future"
-              type="natural"
-              fill="var(--color-future)"
-              fillOpacity={0.4}
-              stroke="var(--color-future)"
-              connectNulls
-            />
+            {lastHistorialDate && (
+              <ReferenceLine
+                x={lastHistorialDate}
+                stroke="#666"
+                strokeDasharray="3 3"
+                label={{ value: "Present", position: "top" }}
+              />
+            )}
           </AreaChart>
         </ChartContainer>
-      )}
+      }
       <div className="flex flex-row gap-2">
         <Button onClick={() => setInterval(7)}>7 days</Button>
         <Button onClick={() => setInterval(30)}>1 months</Button>
         <Button onClick={() => setInterval(90)}>1 quarter</Button>
         <Button onClick={() => setInterval(365)}>1 year</Button>
         <Button onClick={() => setInterval(1825)}>5 years</Button>
-        <Button onClick={() => setInterval(3650)}>10 years</Button>
       </div>
     </div>
   );
