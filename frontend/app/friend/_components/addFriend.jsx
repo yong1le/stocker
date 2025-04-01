@@ -1,54 +1,87 @@
 "use client";
-import React, {useState} from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { sendrequest } from "../server-actions";
-
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { sendFriendRequest } from "../server-actions";
 
-const addFriend = ({ username, refetchFriendList }) => {
-  const router = useRouter();
-
+const AddFriend = ({ username, refreshFriends }) => {
   const [friendUsername, setFriendUsername] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSendRequest = async () => {
-    if (!friendUsername) return;
-    await sendrequest(username, friendUsername);
-    setFriendUsername(""); 
-    refetchFriendList();
+    if (!friendUsername) {
+      setError("Please enter a username");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError("");
+    
+    try {
+      const success = await sendFriendRequest(username, friendUsername);
+      if (success) {
+        setFriendUsername("");
+        refreshFriends();
+      } else {
+        setError("Failed to send friend request");
+      }
+    } catch (error) {
+      setError("An error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button>Add Friend</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogTitle> Add new friend</DialogTitle>
-          <DialogDescription>Enter username to add</DialogDescription>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button className="w-full">Add Friend</Button>
+      </DialogTrigger>
+      
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add new friend</DialogTitle>
+          <DialogDescription>Enter a username to send a friend request</DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
           <Input
             placeholder="Username"
             value={friendUsername}
             onChange={(e) => setFriendUsername(e.target.value)}
           />
-          <DialogClose asChild>
-            <Button type="button" onClick={() => handleSendRequest(username )}>
-              Add
-            </Button>
-          </DialogClose>
-        </DialogContent>
-      </Dialog>
-    </div>
+          
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          
+          <div className="flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            
+            <DialogClose asChild>
+              <Button 
+                type="button" 
+                onClick={handleSendRequest} 
+                disabled={isSubmitting || !friendUsername}
+              >
+                {isSubmitting ? "Sending..." : "Send Request"}
+              </Button>
+            </DialogClose>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default addFriend;
+export default AddFriend;

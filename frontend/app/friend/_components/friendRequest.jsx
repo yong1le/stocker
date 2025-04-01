@@ -5,77 +5,149 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
-import {  handleFriendAction } from "../server-actions";
+import {
+  fetchIncomingFriendRequests,
+  fetchOutgoingFriendRequests,
+  acceptFriendRequest,
+  rejectFriendRequest,
+} from "../server-actions";
 
-const FriendRequest = ({ username, refetchFriendList, request }) => {
+const FriendRequestList = ({
+  username,
+  refreshFriends,
+  requestType,
+  title,
+}) => {
   const [requests, setRequests] = useState([]);
-  const getRequests = async () => {
-    const data = await request(username);
-    if (data) setRequests(data);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadRequests = async () => {
+    if (!username) return;
+
+    setIsLoading(true);
+    try {
+      const requestFn =
+        requestType === "incoming"
+          ? fetchIncomingFriendRequests
+          : fetchOutgoingFriendRequests;
+
+      const data = await requestFn(username);
+      setRequests(data || []);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-
-    getRequests();
+    if (username) {
+      loadRequests();
+    }
   }, [username]);
 
   const handleAction = async (friend, action) => {
-    await handleFriendAction(username, friend, action);
-    refetchFriendList();
-    getRequests();
+    const actionFn =
+      action === "accept" ? acceptFriendRequest : rejectFriendRequest;
+
+    const success = await actionFn(username, friend);
+    if (success) {
+      refreshFriends();
+      loadRequests();
+    }
   };
 
-  console.log("requests", requests);
+  const buttonLabel =
+    requestType === "incoming" ? "Incoming Requests" : "Outgoing Requests";
 
   return (
-    <div>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button>Friend Request</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogTitle>Friend Requests</DialogTitle>
-          <DialogDescription>Accept or Reject</DialogDescription>
-          <div>
-            {requests.length > 0 ? (
-              requests.map((request, index) => (
-                <div key={index} className="flex justify-around gap-2 p-2 border ">
-                  <span>{request}</span>
-                  <div className="flex justify-around gap-2 ">
-                    <DialogClose asChild>
-                      <Button
-                        onClick={() =>
-                          handleAction( request, "accept")
-                        }
-                      >
-                        Accept
-                      </Button>
-                    </DialogClose>
-                    <DialogClose asChild>
-                      <Button
-                        variant="destructive"
-                        onClick={() =>
-                          handleAction( request, "reject")
-                        }
-                      >
-                        Reject
-                      </Button>
-                    </DialogClose>
+    <Dialog onOpenChange={(open) => open && loadRequests()}>
+      <DialogTrigger asChild>
+        <Button
+          className="w-full"
+          variant={requestType === "incoming" ? "default" : "outline"}
+        >
+          {buttonLabel}
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            {requestType === "incoming"
+              ? "Accept or reject friend requests"
+              : "View your outgoing requests"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[300px] overflow-y-auto">
+          {isLoading ? (
+            <p className="text-center text-gray-500">Loading requests...</p>
+          ) : requests.length > 0 ? (
+            <div className="space-y-2">
+              {requests.map((request, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 border rounded-md"
+                >
+                  <span className="font-medium">{request}</span>
+                  <div className="flex gap-2">
+                    {requestType === "incoming" ? (
+                      <>
+                        <DialogClose asChild>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAction(request, "accept")}
+                          >
+                            Accept
+                          </Button>
+                        </DialogClose>
+                        <DialogClose asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleAction(request, "reject")}
+                          >
+                            Reject
+                          </Button>
+                        </DialogClose>
+                      </>
+                    ) : (
+                      <DialogClose asChild>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleAction(request, "reject")}
+                        >
+                          Cancel
+                        </Button>
+                      </DialogClose>
+                    )}
                   </div>
                 </div>
-              ))
-            ) : (
-              <p>No friend requests.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">
+              No {requestType} friend requests.
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default FriendRequest;
+export default FriendRequestList;

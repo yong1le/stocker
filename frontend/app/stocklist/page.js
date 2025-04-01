@@ -4,6 +4,8 @@ import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardTitle } from "@/components/ui/card";
+import StocklistCard from "./_components/StocklistCards";
+import { fetchStocklists } from "./server-action";
 
 const StockListPage = async () => {
   const user = await getUserServer();
@@ -31,16 +33,19 @@ const StockListPage = async () => {
   const stocklists = await getStockList(user);
 
   return (
-    <div className="flex flex-col gap-2 m-2 items-start">
+    <div className="flex flex-col gap-2 m-2  ">
+      <h1>StockLists</h1>
       {stocklists &&
         stocklists.map((e, i) => (
-          <Card key={i} className="p-2">
-            <CardTitle className="text-3xl">
-              <Link href={`/stocklist/${e.slid}`}>
-                {e.name} - {user}
-              </Link>
-            </CardTitle>
-          </Card>
+        <StocklistCard key={i}  folder={e}/>
+
+          // <Card key={i} className="p-2">
+          //   <CardTitle className="text-3xl">
+          //     <Link href={`/stocklist/${e.slid}`}>
+          //       {e.name} - {user}
+          //     </Link>
+          //   </CardTitle>
+          // </Card>
         ))}
     </div>
   );

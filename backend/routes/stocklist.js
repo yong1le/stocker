@@ -122,7 +122,7 @@ stocklist.get('/view/all/:username', async (req, res) => {
   try {
     const result = await client.query(
       `
-      SELECT s.slid, f.folder_name
+      SELECT s.slid, f.folder_name, s.visibility
       FROM Stocklist s
       JOIN Folder f ON s.slid = f.fid
       JOIN Creates c ON f.fid = c.fid
@@ -136,8 +136,8 @@ stocklist.get('/view/all/:username', async (req, res) => {
       throw Error("No stocklists found or you have none.");
     }
 
-    res.json(result.rows.map(({ slid, folder_name }) => ({slid: slid, name: folder_name})));
-    res.json(result.rows.map(({ slid }) => slid));
+    res.json(result.rows.map(({ slid, folder_name, visibility }) => ({slid: slid, name: folder_name, visibility: visibility})));
+    // res.json(result.rows.map(({ slid }) => slid));
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Failed to retrieve stocklists." });

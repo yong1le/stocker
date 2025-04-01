@@ -1,91 +1,53 @@
 "use server";
 
-export const fetchFriendList = async (user, setFriends) => {
-    try {
-        const res = await fetch(`http://localhost:8080/friend/view/all/${user}`);
-        if (!res.ok) throw new Error("Failed to fetch friends");
-        setFriends(await res.json());
-    } catch (error) {
-        console.error(error);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+const apiCall = async (endpoint, method = "GET", body = null) => {
+  try {
+    const options = {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    };
+
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`API error (${res.status}): ${errorText}`);
     }
+    
+    return method === "GET" ? await res.json() : true;
+  } catch (error) {
+    console.error(`API Error at ${endpoint}:`, error);
+    return null;
+  }
 };
 
-export const fetchIncomingFriendReq = async (username) => {
-    try {
-        const res = await fetch(`http://localhost:8080/friend/view/requests/in/${username}`);
-        if (!res.ok) throw new Error("Failed to fetch requests");
-        return await res.json();
-    } catch (error) {
-        console.error(error);
-        return null;
-    }
+export const fetchFriendList = async (username) => {
+  return apiCall(`/friend/view/all/${username}`);
 };
 
-export const fetchOutgoingFriendReq = async (username) => {
-    try {
-        const res = await fetch(`http://localhost:8080/friend/view/requests/out/${username}`);
-        if (!res.ok) throw new Error("Failed to fetch requests");
-        return await res.json();
-    } catch (error) {
-        console.error(error);
-        return null;
-    }
+export const fetchIncomingFriendRequests = async (username) => {
+  return apiCall(`/friend/view/requests/in/${username}`);
 };
 
-export const handleFriendAction = async (username, friend, action) => {
-    const endpoint = action === "accept" ? "/accept" : "/reject";
-    try {
-        const url = `http://localhost:8080/friend${endpoint}/${username}`;
-        
-        const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ friend }),
-        });
-
-        if (!res.ok) throw new Error(`Failed to ${action} friend request`);
-
-        return true;
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
+export const fetchOutgoingFriendRequests = async (username) => {
+  return apiCall(`/friend/view/requests/out/${username}`);
 };
 
-export const sendrequest = async (username, friend) => {
-    try {
-        const url = `http://localhost:8080/friend/sendrequest/${username}`;
-        
-        const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ friend }),
-        });
+export const sendFriendRequest = async (username, friend) => {
+  return apiCall(`/friend/sendrequest/${username}`, "POST", { friend });
+};
 
-        if (!res.ok) throw new Error(`Failed to send friend request`);
+export const acceptFriendRequest = async (username, friend) => {
+  return apiCall(`/friend/accept/${username}`, "POST", { friend });
+};
 
-        return true;
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
+export const rejectFriendRequest = async (username, friend) => {
+  return apiCall(`/friend/reject/${username}`, "POST", { friend });
 };
 
 export const removeFriend = async (username, friend) => {
-    try {
-        const url = `http://localhost:8080/friend/remove/${username}`;
-        
-        const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ friend }),
-        });
-
-        if (!res.ok) throw new Error(`Failed to send remove`);
-
-        return true;
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
+  return apiCall(`/friend/remove/${username}`, "POST", { friend });
 };

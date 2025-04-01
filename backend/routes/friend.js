@@ -71,7 +71,6 @@ friend.post("/sendrequest/:username", async (req, res) => {
 friend.post("/accept/:username", async (req, res) => {
   const username = req.params.username;
   const { friend } = req.body; // username accepts friend request from friend
-  console.log("in herer", username, friend);
 
   try {
     const result = await query(
@@ -170,7 +169,6 @@ friend.get("/view/requests/out/:username", async (req, res) => {
     }
 
     const requests = result.rows.map(row => row.requester);
-    console.log(requests);
     res.json( requests );
   } catch (e) {
     console.log(e);

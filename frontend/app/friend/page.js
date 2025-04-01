@@ -1,71 +1,93 @@
 "use client";
 import { redirect } from "next/navigation";
 import { getUserServer } from "@/lib/auth-server";
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardTitle } from "@/components/ui/card";
+import { fetchFriendList, removeFriend } from "./server-actions";
 import AddFriend from "./_components/addFriend";
-import FriendRequest from "./_components/friendRequest";
-import { fetchIncomingFriendReq, fetchOutgoingFriendReq, removeFriend} from "./server-actions";
-import { Button } from "@/components/ui/button";
+import FriendRequestList from "./_components/friendRequest";
+import FriendCard from "./_components/FriendCard";
 
 const FriendView = () => {
   const [user, setUser] = useState("");
   const [friends, setFriends] = useState([]);
 
-  // Fetch the current user on mount
   useEffect(() => {
     const fetchUser = async () => {
-      const currentUser = await getUserServer();
-      if (!currentUser) redirect("/login");
-      setUser(currentUser);
+      try {
+        const currentUser = await getUserServer();
+        if (!currentUser) return redirect("/login");
+        setUser(currentUser);
+      } catch (error) {
+        redirect("/login");
+      }
     };
 
     fetchUser();
   }, []);
 
-  const fetchFriendList = async () => {
+  const loadFriendList = async () => {
+    if (!user) return;
+
     try {
-      const res = await fetch(`http://localhost:8080/friend/view/all/${user}`);
-      if (!res.ok) throw new Error("Failed to fetch friends");
-      setFriends(await res.json());
+      const friendList = await fetchFriendList(user);
+      setFriends(friendList || []);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching friends:", error);
+    } 
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadFriendList();
+    }
+  }, [user]);
+
+  const handleRemoveFriend = async (friendName) => {
+    const success = await removeFriend(user, friendName);
+    if (success) {
+      loadFriendList();
     }
   };
 
-  // Fetch the friends and friend requests
-  useEffect(() => {
-    if (!user) return;
-
-    fetchFriendList();
-  }, [user]);
-
   return (
     <div className="m-5 flex flex-row gap-5">
-      <Card className="p-4 flex-2">
-        <h1>Current user, {user}</h1>
-        <CardTitle className="text-4xl">Friends</CardTitle>
-          {friends.length > 0 &&
-            friends.map((e, i) => (
-              <Card key={i} className="p-2">
-                <CardTitle className="text-3xl">
-                  {e}
-                  <Button
-                        variant="destructive"
-                        onClick={() => removeFriend(user, e)}
-                      >
-                        remove
-                      </Button>
-                </CardTitle>
-              </Card>
+      <Card className="p-4 flex-grow">
+        <CardTitle className="text-2xl mb-4 items-center">Friends</CardTitle>
+        {friends.length > 0 ? (
+          <div className="space-y-3">
+            {friends.map((friend, i) => (
+              <FriendCard
+                key={i}
+                friendName={friend}
+                onRemove={() => handleRemoveFriend(friend)}
+              />
             ))}
-      </Card>
-      <Card className="p-4 ">
-        <AddFriend username={user} refetchFriendList={fetchFriendList} />
-        <FriendRequest username={user} refetchFriendList={fetchFriendList} request={fetchIncomingFriendReq}/>
-        <FriendRequest username={user} refetchFriendList={fetchFriendList} request={fetchOutgoingFriendReq}/>
+          </div>
+        ) : (
+          <p>No friends yet!</p>
+        )}
       </Card>
 
+      <Card className="p-4 ">
+        <div className="space-y-3">
+          <AddFriend username={user} refreshFriends={loadFriendList} />
+
+          <FriendRequestList
+            username={user}
+            refreshFriends={loadFriendList}
+            requestType="incoming"
+            title="Incoming Requests"
+          />
+
+          <FriendRequestList
+            username={user}
+            refreshFriends={loadFriendList}
+            requestType="outgoing"
+            title="Outgoing Requests"
+          />
+        </div>
+      </Card>
     </div>
   );
 };
