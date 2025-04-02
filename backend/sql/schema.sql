@@ -24,7 +24,7 @@ CREATE Table Transaction (
         ON DELETE CASCADE,
     transaction_type transaction_enum NOT NULL DEFAULT 'bank',
     amount float NOT NULL,
-    other_pid SERIAL REFERENCES Portfolio(pid) 
+    other_pid INT DEFAULT NULL REFERENCES Portfolio(pid) 
         ON DELETE CASCADE,
     stock_symbol VARCHAR(5) REFERENCES Stock(symbol)
         ON DELETE CASCADE,

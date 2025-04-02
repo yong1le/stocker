@@ -62,7 +62,7 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
                   .filter((e) => e.pid != pid)
                   .map((e) => (
                     <SelectItem
-                      key={`portfolio-${e.fid}`}
+                      key={`portfolio-${e.pid}`}
                       value={e.pid.toString()}
                     >
                       {e.name} - {e.amount}

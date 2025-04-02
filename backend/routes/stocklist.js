@@ -183,9 +183,9 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
       `
     SELECT * FROM (
      (
-    SELECT f.*, s.*
-    FROM Folder f
-    JOIN Stocklist s ON f.fid = s.slid
+    SELECT f.*, s.*, c.username
+    FROM ((Folder f
+    JOIN Stocklist s ON f.fid = s.slid) JOIN Creates c ON f.fid = c.fid)
     WHERE f.fid = $2 
     AND (
       EXISTS (SELECT 1 FROM Creates c WHERE c.username = $1 AND c.fid = $2)
@@ -219,6 +219,7 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
       slid: result.rows[0].slid,
       name: result.rows[0].folder_name,
       amount: result.rows[0].amount,
+      username: result.rows[0].username,
       stocks: result.rows
         .filter(({ symbol, share }) => symbol !== null && share !== null)
         .map(({ symbol, share, value }) => ({ symbol, share, value })),
@@ -345,7 +346,6 @@ stocklist.post('/create/review/:slid', async (req, res) => {
 
 stocklist.get('/reviews/view/all/:slid', async (req, res) => {
   const slid = req.params.slid;
-  console.log("backend ", slid)
 
   const client = await getClient();
   try {
