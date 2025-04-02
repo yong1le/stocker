@@ -9,17 +9,17 @@ stocklist.get("/", (req, res) => {
 
 // Create stocklist with folder reference
 stocklist.post('/create', async (req, res) => {
-  const { username, pname } = req.body;
+  const { username, sname } = req.body;
   const client = await getClient();
   client.query("BEGIN");
   try {
     const result = await client.query(
-    `
+      `
       INSERT INTO folder (folder_name)
       VALUES ($1)
       RETURNING *
     `,
-      [pname]
+      [sname]
     );
     if (result.rowCount === 0) throw Error("Failed to create folder");
 
@@ -35,14 +35,14 @@ stocklist.post('/create', async (req, res) => {
       [username, slid]
     );
     await client.query(
-    `
+      `
       INSERT INTO stocklist
       VALUES ($1, 'private')
     `,
       [slid]
     );
     await client.query(
-    `
+      `
       INSERT INTO reviews(reviewer, slid, content)
       VALUES ($1, $2, '')
     `,
@@ -56,6 +56,32 @@ stocklist.post('/create', async (req, res) => {
     res.json({ slid: -1 }).status(400);
   } finally {
     client.release();
+  }
+});
+
+// Remove stock list
+stocklist.post("/remove/:slid", async (req, res) => {
+  const slid = req.params.slid;
+  const { username } = req.body;
+
+  try {
+    const result = await query(
+      `
+      DELETE FROM stocklist
+      WHERE (username = $1) AND friend_status = false
+      RETURNING *
+      `,
+      [username, slid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ message: "No pending request found to reject." });
+    }
+
+    res.json({ message: "Friend request rejected." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error." });
   }
 });
 
@@ -94,7 +120,7 @@ stocklist.post('/reviewcontent/:slid', async (req, res) => {
   const client = await getClient();
   try {
     const result = await client.query(
-    `
+      `
       UPDATE reviews
       SET content = $1
       WHERE slid = $2
@@ -122,7 +148,7 @@ stocklist.get('/view/all/:username', async (req, res) => {
   try {
     const result = await client.query(
       `
-      SELECT s.slid, f.folder_name, s.visibility
+      SELECT s.slid, f.folder_name, s.visibility, c.username
       FROM Stocklist s
       JOIN Folder f ON s.slid = f.fid
       JOIN Creates c ON f.fid = c.fid
@@ -136,7 +162,7 @@ stocklist.get('/view/all/:username', async (req, res) => {
       throw Error("No stocklists found or you have none.");
     }
 
-    res.json(result.rows.map(({ slid, folder_name, visibility }) => ({slid: slid, name: folder_name, visibility: visibility})));
+    res.json(result.rows.map(({ slid, folder_name, visibility, username }) => ({ slid: slid, name: folder_name, visibility: visibility, username: username })));
     // res.json(result.rows.map(({ slid }) => slid));
   } catch (e) {
     console.log(e);
@@ -156,10 +182,16 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     const result = await query(
       `
     SELECT * FROM (
-      (
-      (SELECT * FROM Creates c WHERE username = $1 AND c.fid = $2)
-      NATURAL JOIN Folder f JOIN Stocklist s ON f.fid = s.slid
-      )
+     (
+    SELECT f.*, s.*
+    FROM Folder f
+    JOIN Stocklist s ON f.fid = s.slid
+    WHERE f.fid = $2 
+    AND (
+      EXISTS (SELECT 1 FROM Creates c WHERE c.username = $1 AND c.fid = $2)
+      OR EXISTS (SELECT 1 FROM Shares sh WHERE sh.shared_with = $1 AND sh.slid = $2)
+    )
+  )
       NATURAL LEFT JOIN
       (
         SELECT fid, symbol, share, share * close AS value  FROM (
@@ -185,7 +217,7 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
 
     res.json({
       slid: result.rows[0].slid,
-      folder_name: result.rows[0].folder_name,
+      name: result.rows[0].folder_name,
       amount: result.rows[0].amount,
       stocks: result.rows
         .filter(({ symbol, share }) => symbol !== null && share !== null)
@@ -217,19 +249,28 @@ stocklist.post('/share/:slid', async (req, res) => {
       return res.status(400).json({ error: "You are not friends with this user." });
     }
 
-    // Update stocklist visibility to 'shared'
-    const updateStocklist = await client.query(
+    const stocklistResult = await client.query(
       `
-      UPDATE stocklist
-      SET visibility = 'shared'
-      WHERE slid = $1
-      RETURNING *
+      SELECT visibility FROM Stocklist WHERE slid = $1
       `,
       [slid]
     );
 
-    if (updateStocklist.rowCount === 0) {
-      return res.status(400).json({ error: "Stocklist not found or failed to update." });
+    if (stocklistResult.rowCount === 0) {
+      return res.status(400).json({ error: "Stocklist not found." });
+    }
+
+    const { visibility } = stocklistResult.rows[0];
+
+    // If stocklist is public, don't update visibility
+    if (visibility === 'private') {
+      await client.query(
+        `
+        UPDATE stocklist
+        SET visibility = 'shared'
+        WHERE slid = $1 AND visibility != 'public'
+        `, [slid]
+      );
     }
 
     // Insert into Shares table to log the shared stocklist
@@ -237,6 +278,7 @@ stocklist.post('/share/:slid', async (req, res) => {
       `
       INSERT INTO Shares
       VALUES ($1, $2, $3)
+      ON CONFLICT (creator, shared_with, slid) DO NOTHING
       RETURNING *
       `,
       [username, friend, slid]
@@ -245,8 +287,7 @@ stocklist.post('/share/:slid', async (req, res) => {
     if (insertShare.rowCount === 0) {
       return res.status(400).json({ error: "Failed to log shared stocklist." });
     }
-
-    res.json({ message: "Stocklist successfully shared with the friend." });
+    res.json(insertShare.rows[0]);
   } catch (e) {
     console.log(e);
     res.status(500).json({ error: "Server error." });
@@ -267,7 +308,7 @@ stocklist.post('/create/review/:slid', async (req, res) => {
       FROM Stocklist s
       LEFT JOIN Shares sh ON s.slid = sh.slid
       WHERE s.slid = $1 
-      AND (s.visibility = 'public' OR sh.shared_with = $2)
+      AND (s.visibility = 'public' OR sh.shared_with = $2 OR s.visibility = 'private')
       LIMIT 1
       `,
       [slid, username]
@@ -302,6 +343,29 @@ stocklist.post('/create/review/:slid', async (req, res) => {
   }
 });
 
+stocklist.get('/reviews/view/all/:slid', async (req, res) => {
+  const slid = req.params.slid;
+  console.log("backend ", slid)
+
+  const client = await getClient();
+  try {
+    const reviewsResult = await client.query(
+      `
+      SELECT * 
+      FROM reviews
+      WHERE slid = $1
+      `,
+      [slid]
+    );
+
+    res.json(reviewsResult.rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error." });
+  } finally {
+    client.release();
+  }
+});
 
 /** Username adds shares of stock into stocklist */
 stocklist.post("/add", async (req, res) => {
@@ -324,15 +388,15 @@ stocklist.post("/add", async (req, res) => {
     )
       throw Error(`${username} is not the creator of stocklist ${slid}`);
 
-      const userstock = await client.query(
-        `
+    const userstock = await client.query(
+      `
       SELECT * from Stockholding
       WHERE fid = $1 AND symbol = $2
       `,
-        [slid, symbol]
-      )
+      [slid, symbol]
+    )
     // Check if this stocklist already holds the share
-    if (userstock.rowCount === 0)  {
+    if (userstock.rowCount === 0) {
       await client.query(
         `
       INSERT INTO Stockholding
@@ -340,7 +404,7 @@ stocklist.post("/add", async (req, res) => {
       `,
         [slid, symbol, shares]
       );
-    }  else {
+    } else {
       await client.query(
         `
       UPDATE Stockholding

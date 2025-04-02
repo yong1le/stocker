@@ -2,9 +2,8 @@ import React from "react";
 import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import { Card, CardTitle } from "@/components/ui/card";
-import stocklistBuyAction from "./_components/buy";
-import stocklistDepositAction from "./_components/deposit";
-import stocklistWithdrawalAction from "./_components/withdrawal";
+import StocklistAddAction from "./_components/add";
+import ReviewList from "./_components/ReviewList";
 
 const StocklistView = async ({ params }) => {
   const slid = (await params).slid;
@@ -65,19 +64,20 @@ const StocklistView = async ({ params }) => {
 
   const stocklist = await getStocklistInfo(user, slid);
   const stocks = await getStocks();
-  const stocklists = await getStocklists(user);
 
   return (
-    <div className="m-5 flex flex-row gap-5">
+    <div className="m-5 flex flex-col gap-5">
       <Card className="p-4 flex-2">
         {stocklist !== null && (
           <div className="flex flex-col gap-3">
             <CardTitle className="text-4xl">
-              {stocklist.name} - ${Number(stocklist.value).toFixed(2)}
+            <div className="flex justify-between">
+
+              {stocklist.name}
+              {/* - ${Number(stocklist.value).toFixed(2)} */}
+                <StocklistAddAction username={user} slid={slid} stocks={stocks} />
+              </div>
             </CardTitle>
-            <div>
-              <p>Cash: ${Number(stocklist.amount).toFixed(2)}</p>
-            </div>
 
             <div className="flex flex-col gap-2">
               {stocklist.stocks &&
@@ -97,19 +97,7 @@ const StocklistView = async ({ params }) => {
           </div>
         )}
       </Card>
-      <Card className="p-4">
-        {/* <stocklistBuyAction username={user} slid={slid} stocks={stocks} />
-        <stocklistDepositAction
-          username={user}
-          slid={slid}
-          stocklists={stocklists}
-        />
-        <stocklistWithdrawalAction
-          username={user}
-          slid={slid}
-          stocklists={stocklists}
-        /> */}
-      </Card>
+      <ReviewList username={user} slid={slid}  />
     </div>
   );
 };

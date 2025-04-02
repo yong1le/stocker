@@ -3,18 +3,27 @@ import React from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import ShareList from "./ShareList";
 
-const StocklistCard = ({ folder, onRemove }) => {
+const StocklistCard = ({ user, folder, onRemove }) => {
   const name = folder.name;
   const slid = folder.slid;
+  const visibility = folder.visibility;
+  const username = folder.username;
   return (
     <Card className="p-2 flex flex-row justify-between">
       <CardTitle className="text-3xl">
-        <Link href={`/stocklist/${slid}`}>{name}</Link>
+        <Link href={`/stocklist/${slid}`}>
+          {name}
+          <p> status {visibility}</p>
+        </Link>
       </CardTitle>
       <div className="space-x-2">
-        <Button>Share</Button>
-        <Button>Review</Button>
+        {username === user && visibility !== "public" ? (
+          <ShareList username={user} slid={slid} />
+        ) : (
+          <> </>
+        )}
         <Button
           variant="destructive"
           size="sm"

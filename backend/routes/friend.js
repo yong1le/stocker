@@ -19,11 +19,10 @@ friend.post("/sendrequest/:username", async (req, res) => {
     );
 
     if (existingFriendship.rowCount > 0) {
-      if (existingFriendship.rows[0].friend_status === true)
-      {
+      if (existingFriendship.rows[0].friend_status === true) {
         return res.json({ message: "already friends." });
-      }      if (
-        existingFriendship.rows[0].uid2 === username 
+      } if (
+        existingFriendship.rows[0].uid2 === username
       ) {
         const result = await query(
           `
@@ -34,19 +33,19 @@ friend.post("/sendrequest/:username", async (req, res) => {
           `,
           [username, friend]
         );
-    
+
         if (result.rowCount === 0) throw Error("Failed to update friend status.");
-        
-    
-        return res.json({ 
-          message: "Friend request accepted, now friends.", 
-          results: result.rows[0] 
+
+
+        return res.json({
+          message: "Friend request accepted, now friends.",
+          results: result.rows[0]
         });
       }
-    
+
       return res.json({ message: "friend request sent already." });
     }
-    
+
     const result = await query(
       `
       INSERT INTO friends 
@@ -97,7 +96,7 @@ friend.post("/accept/:username", async (req, res) => {
 // Reject a friend request
 friend.post("/reject/:username", async (req, res) => {
   const username = req.params.username;
-  const { friend   } = req.body; // username reject friend request from friend
+  const { friend } = req.body; // username reject friend request from friend
 
   try {
     const result = await query(
@@ -124,7 +123,7 @@ friend.post("/reject/:username", async (req, res) => {
 friend.get("/view/requests/in/:username", async (req, res) => {
   const username = req.params.username;
   const client = await getClient();
-  
+
   try {
     const result = await client.query(
       `
@@ -140,7 +139,7 @@ friend.get("/view/requests/in/:username", async (req, res) => {
     }
 
     const requests = result.rows.map(row => row.requester);
-    res.json( requests );
+    res.json(requests);
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Failed to retrieve friend requests" });
@@ -153,7 +152,7 @@ friend.get("/view/requests/in/:username", async (req, res) => {
 friend.get("/view/requests/out/:username", async (req, res) => {
   const username = req.params.username;
   const client = await getClient();
-  
+
   try {
     const result = await client.query(
       `
@@ -169,7 +168,7 @@ friend.get("/view/requests/out/:username", async (req, res) => {
     }
 
     const requests = result.rows.map(row => row.requester);
-    res.json( requests );
+    res.json(requests);
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Failed to retrieve friend requests" });
@@ -182,7 +181,7 @@ friend.get("/view/requests/out/:username", async (req, res) => {
 //view all friends to user
 friend.get('/view/all/:username', async (req, res) => {
   const username = req.params.username;
-    const client = await getClient();
+  const client = await getClient();
   try {
     const result = await client.query(
       `
@@ -211,7 +210,7 @@ friend.get('/view/all/:username', async (req, res) => {
 // Reject a friend request
 friend.post("/remove/:username", async (req, res) => {
   const username = req.params.username;
-  const { friend   } = req.body; // username reject friend request from friend
+  const { friend } = req.body; // username reject friend request from friend
 
   try {
     const result = await query(

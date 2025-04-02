@@ -21,19 +21,20 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { buyStock } from "../server-actions";
+import { addStock } from "../../server-actions";
 import { useRouter } from "next/navigation";
 
-const PortfolioBuyAction = ({ username, pid, stocks }) => {
+const StocklistAddAction = ({ username, slid, stocks }) => {
+
   const router = useRouter();
   const [selectedStock, setSelectedStock] = useState(null);
 
-  const buyStockAction = async (data) => {
+  const addStockAction = async (data) => {
     const shares = data.get("shares");
 
-    const success = await buyStock(selectedStock, shares, username, pid);
+    const success = await addStock(username, slid, selectedStock, shares);
 
-    if (!success) window.alert("Failed to buy stocks");
+    if (!success) window.alert("Failed to add stocks");
     else router.refresh();
   };
 
@@ -41,13 +42,13 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
     <div>
       <Dialog>
         <DialogTrigger asChild>
-          <Button>Buy</Button>
+          <Button>Add</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
-          <form action={buyStockAction}>
+          <form action={addStockAction}>
             <DialogHeader>
-              <DialogTitle>Buy Stocks</DialogTitle>
-              <DialogDescription>Choose a stock to buy</DialogDescription>
+              <DialogTitle>Add Stocks</DialogTitle>
+              <DialogDescription>Choose a stock to add</DialogDescription>
             </DialogHeader>
 
             <Select onValueChange={setSelectedStock}>
@@ -71,7 +72,7 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
             </div>
 
             <DialogFooter>
-              <Button type="submit">Buy</Button>
+              <Button type="submit">Add</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -80,4 +81,4 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
   );
 };
 
-export default PortfolioBuyAction;
+export default StocklistAddAction;
