@@ -63,11 +63,14 @@ CREATE TABLE Stockholding (
     share int NOT NULL CHECK (share > 0),
     PRIMARY KEY (fid, symbol)
 );
+CREATE TYPE friend_enum AS ENUM ('pending', 'accepted', 'rejected', 'removed');
 
 CREATE Table Friends (
     uid1 VARCHAR(25) REFERENCES Useraccount(username),
     uid2 VARCHAR(25) REFERENCES Useraccount(username),
-    friend_status BOOLEAN,
+    friend_status friend_enum DEFAULT 'pending',
+    reject_time TIMESTAMP NULL,
+    remove_time TIMESTAMP NULL,
     PRIMARY Key(uid1, uid2)
 );
 

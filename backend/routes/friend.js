@@ -12,22 +12,52 @@ friend.post("/sendrequest/:username", async (req, res) => {
 
     const existingFriendship = await query(
       `
-      SELECT * FROM friends
+      SELECT *, 
+      EXTRACT(EPOCH FROM (NOW() - GREATEST(reject_time, remove_time))) AS time
+      FROM friends
       WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1)
       `,
       [username, friend]
     );
 
     if (existingFriendship.rowCount > 0) {
-      if (existingFriendship.rows[0].friend_status === true) {
-        return res.json({ message: "already friends." });
-      } if (
-        existingFriendship.rows[0].uid2 === username
-      ) {
+      const friendship = existingFriendship.rows[0];
+
+      if (friendship.friend_status === "accepted") {
+        return res.json({ message: "Already friends." });
+      }
+
+      if (friendship.friend_status === "pending" && friendship.uid2 === username) {
         const result = await query(
           `
           UPDATE friends 
-          SET friend_status = true
+          SET friend_status = 'accepted'
+          WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1)
+          RETURNING *
+          `,
+          [username, friend]
+        );
+
+        if (result.rowCount === 0) throw Error("Failed to update friend status.");
+
+
+        return res.json({
+          message: "Friend request accepted, now friends.",
+          results: result.rows[0]
+        });
+      } 
+
+      if (friendship.time !== null && friendship.time < 300) {
+        return res.status(400).json({
+          message: `You must wait ${Math.ceil(
+            (300 - friendship.time) / 60
+          )} minutes before resending a friend request.`,
+        });
+      } else {
+        const result = await query(
+          `
+          UPDATE friends 
+          SET friend_status = 'pending'
           WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1)
           RETURNING *
           `,
@@ -42,14 +72,12 @@ friend.post("/sendrequest/:username", async (req, res) => {
           results: result.rows[0]
         });
       }
-
-      return res.json({ message: "friend request sent already." });
     }
 
     const result = await query(
       `
       INSERT INTO friends 
-      VALUES ($1, $2, false)
+      VALUES ($1, $2, 'pending')
       RETURNING *
       `,
       [username, friend]
@@ -75,8 +103,8 @@ friend.post("/accept/:username", async (req, res) => {
     const result = await query(
       `
       UPDATE friends
-      SET friend_status = true
-      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = false
+      SET friend_status = 'accepted'
+      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = 'pending'
       RETURNING *
       `,
       [username, friend]
@@ -101,8 +129,9 @@ friend.post("/reject/:username", async (req, res) => {
   try {
     const result = await query(
       `
-      DELETE FROM friends
-      WHERE (uid1 = $2 AND uid2 = $1) AND friend_status = false
+      UPDATE friends
+      SET friend_status = 'rejected', reject_time = NOW()
+      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = 'pending'
       RETURNING *
       `,
       [username, friend]
@@ -129,7 +158,7 @@ friend.get("/view/requests/in/:username", async (req, res) => {
       `
       SELECT uid1 as requester
       FROM friends
-      WHERE uid2 = $1 AND friend_status = false
+      WHERE uid2 = $1 AND friend_status = 'pending'
       `,
       [username]
     );
@@ -158,7 +187,7 @@ friend.get("/view/requests/out/:username", async (req, res) => {
       `
       SELECT uid2 as requester
       FROM friends
-      WHERE uid1 = $1 AND friend_status = false
+      WHERE uid1 = $1 AND friend_status = 'pending'
       `,
       [username]
     );
@@ -187,7 +216,7 @@ friend.get('/view/all/:username', async (req, res) => {
       `
       SELECT uid1, uid2
       FROM friends
-      WHERE friend_status = true AND (uid1 = $1 OR uid2 = $1)
+      WHERE friend_status = 'accepted' AND (uid1 = $1 OR uid2 = $1)
       `,
       [username]
     );
@@ -207,7 +236,7 @@ friend.get('/view/all/:username', async (req, res) => {
   }
 });
 
-// Reject a friend request
+// Remove a friend request
 friend.post("/remove/:username", async (req, res) => {
   const username = req.params.username;
   const { friend } = req.body; // username reject friend request from friend
@@ -215,8 +244,35 @@ friend.post("/remove/:username", async (req, res) => {
   try {
     const result = await query(
       `
+      UPDATE friends
+      SET friend_status = 'removed', remove_time = NOW()
+      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = 'accepted'
+      RETURNING *
+      `,
+      [username, friend]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ message: "No pending friend found to reject." });
+    }
+
+    res.json({ message: "Friend request removed." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+// Cancel a friend request
+friend.post("/cancel/:username", async (req, res) => {
+  const username = req.params.username;
+  const { friend } = req.body; // username reject friend request from friend
+
+  try {
+    const result = await query(
+      `
       DELETE FROM friends
-      WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1) AND friend_status = true
+      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = 'pending'
       RETURNING *
       `,
       [username, friend]

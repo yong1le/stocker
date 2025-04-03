@@ -53,7 +53,7 @@ const FriendView = () => {
   return (
     <div className="m-5 flex flex-row gap-5">
       <Card className="p-4 flex-grow">
-        <CardTitle className="text-2xl mb-4 items-center">Friends</CardTitle>
+        <CardTitle className="text-2xl mb-4 items-center">Friends, {user}</CardTitle>
         {friends.length > 0 ? (
           <div className="space-y-3">
             {friends.map((friend, i) => (
