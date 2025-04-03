@@ -48,10 +48,12 @@ const TransactionsPage = async ({ params }) => {
               <CardTitle>{e.transaction_type.toUpperCase()}</CardTitle>
               <CardContent>
                 <p>Amount: {e.amount}</p>
-                {e.transaction_type === "bank" && <p>Transfer to bank</p>}
+                {e.transaction_type === "bank" && (
+                  <p>Transfer {e.amount > 0 ? "from" : "to"} bank</p>
+                )}
                 {e.transaction_type === "transfer" && (
                   <p>
-                    Transfer to{" "}
+                    Transfer {e.amount > 0 ? "from " : "to "}
                     <Link
                       href={`/portfolio/${e.other_pid}`}
                       className="underline"

@@ -593,7 +593,7 @@ portfolio.get("/transactions/:username/:pid", async (req, res) => {
       (
         Transaction t JOIN Creates c
         ON t.pid = c.fid AND c.username = $1
-      ) JOIN Folder f ON other_pid = f.fid
+      ) LEFT JOIN Folder f ON other_pid = f.fid
     )
     WHERE pid = $2
     `,

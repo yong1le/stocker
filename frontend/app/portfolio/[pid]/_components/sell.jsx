@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sellStock } from "../server-actions";
 import { useRouter } from "next/navigation";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 const PortfolioSellAction = ({ username, pid, stocks }) => {
   const router = useRouter();
@@ -65,14 +66,16 @@ const PortfolioSellAction = ({ username, pid, stocks }) => {
             </Select>
 
             <div className="grid gap-2 my-2">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <Label htmlFor="shares">Shares</Label>
               </div>
               <Input id="shares" type="number" name="shares" required min={1} />
             </div>
 
             <DialogFooter>
-              <Button type="submit">Sell</Button>
+              <DialogClose asChild>
+                <Button type="submit">Sell</Button>
+              </DialogClose>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -131,7 +131,7 @@ const Stock = () => {
   }, [interval]);
 
   return (
-    <div className="p-4">
+    <div className="p-4 flex flex-col items-center w-full gap-6">
       <div className="mb-4">
         <h1 className="font-bold text-4xl">{symbol}</h1>
         {statistic && (
@@ -141,8 +141,7 @@ const Stock = () => {
           </div>
         )}
       </div>
-
-      {
+      <div className="w-4/5">
         <ChartContainer config={chartConfig}>
           <AreaChart
             accessibilityLayer
@@ -182,8 +181,9 @@ const Stock = () => {
             )}
           </AreaChart>
         </ChartContainer>
-      }
-      <div className="flex flex-row gap-2">
+      </div>
+
+      <div className="flex flex-row gap-2 self-center">
         <Button onClick={() => setInterval(7)}>7 days</Button>
         <Button onClick={() => setInterval(30)}>1 months</Button>
         <Button onClick={() => setInterval(90)}>1 quarter</Button>

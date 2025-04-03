@@ -4,6 +4,7 @@ import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardTitle } from "@/components/ui/card";
+import NewPortfolio from "./_components/new-portfolio";
 
 const PortfolioListPage = async () => {
   const user = await getUserServer();
@@ -32,6 +33,8 @@ const PortfolioListPage = async () => {
 
   return (
     <div className="flex flex-col gap-2 m-2 items-start">
+      <h1>Portfolios</h1>
+      <NewPortfolio username={user} />
       {portfolios &&
         portfolios.map((e) => (
           <Card key={e.name} className="p-2">

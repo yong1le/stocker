@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { withdrawalPortfolio } from "../server-actions";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 const PortfolioWithdrawalAction = ({ username, pid }) => {
   const router = useRouter();
@@ -39,19 +40,21 @@ const PortfolioWithdrawalAction = ({ username, pid }) => {
             <DialogHeader>
               <DialogTitle>Withdrawal Money</DialogTitle>
               <DialogDescription>
-                Choose account to wtihdraw to
+                Choose amount to withdrawal
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid g ap-2 my-2">
-              <div className="flex items-center">
+            <div className="grid gap-2 my-2">
+              <div className="flex items-center ">
                 <Label htmlFor="amount">Amount</Label>
               </div>
               <Input id="amount" type="number" name="amount" required min={1} />
             </div>
 
             <DialogFooter>
-              <Button type="submit">Withdraw</Button>
+              <DialogClose asChild>
+                <Button type="submit">Withdraw</Button>
+              </DialogClose>
             </DialogFooter>
           </form>
         </DialogContent>

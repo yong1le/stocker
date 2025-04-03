@@ -32,13 +32,13 @@ const CorrelationMatrix = ({ username, pid }) => {
       );
 
       if (!res.ok) {
-        return {};
+        return null;
       }
 
       return await res.json();
     } catch (e) {
       console.log(e);
-      return {};
+      return null;
     }
   };
 
@@ -72,21 +72,28 @@ const CorrelationMatrix = ({ username, pid }) => {
         </CollapsibleTrigger>
       </div>
 
-      <CollapsibleContent className="px-4 flex flex-row gap-2 pb-6">
-        {chartData && (
-          <ReactMatrixTable
-            rows={chartData.rows}
-            columns={chartData.columns}
-            data={chartData.data}
-          />
+      <CollapsibleContent >
+        {chartData &&
+        chartData.rows &&
+        chartData.columns &&
+        chartData.columns ? (
+          <div className="px-4 flex flex-row gap-2 pb-6">
+            <ReactMatrixTable
+              rows={chartData.rows}
+              columns={chartData.columns}
+              data={chartData.data}
+            />
+            <div className="flex flex-col gap-2">
+              <Button onClick={() => setInterval(7)}>7 days</Button>
+              <Button onClick={() => setInterval(30)}>1 months</Button>
+              <Button onClick={() => setInterval(90)}>1 quarter</Button>
+              <Button onClick={() => setInterval(365)}>1 year</Button>
+              <Button onClick={() => setInterval(1825)}>5 years</Button>
+            </div>
+          </div>
+        ) : (
+          <div>Please buy some stocks first</div>
         )}
-        <div className="flex flex-col gap-2">
-          <Button onClick={() => setInterval(7)}>7 days</Button>
-          <Button onClick={() => setInterval(30)}>1 months</Button>
-          <Button onClick={() => setInterval(90)}>1 quarter</Button>
-          <Button onClick={() => setInterval(365)}>1 year</Button>
-          <Button onClick={() => setInterval(1825)}>5 years</Button>
-        </div>
       </CollapsibleContent>
     </Collapsible>
   );

@@ -16,21 +16,6 @@ CREATE TABLE Portfolio (
     FOREIGN KEY (pid) REFERENCES Folder(fid)
         ON DELETE CASCADE
 );
-CREATE TYPE transaction_enum AS ENUM ('bank', 'transfer', 'stock');
-CREATE Table Transaction (
-    tid SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    pid SERIAL NOT NULL REFERENCES Portfolio (pid)
-        ON DELETE CASCADE,
-    transaction_type transaction_enum NOT NULL DEFAULT 'bank',
-    amount float NOT NULL,
-    other_pid INT DEFAULT NULL REFERENCES Portfolio(pid) 
-        ON DELETE CASCADE,
-    stock_symbol VARCHAR(5) REFERENCES Stock(symbol)
-        ON DELETE CASCADE,
-    stock_shares int
-);
-
 CREATE TYPE vis_enum AS ENUM ('private', 'shared', 'public');
 CREATE TABLE Stocklist (
     slid SERIAL PRIMARY KEY, 
@@ -86,4 +71,18 @@ CREATE TABLE Reviews(
     slid int REFERENCES Stocklist(slid), 
     content VARCHAR(4000) DEFAULT '',
     PRIMARY KEY (reviewer, slid)
+);
+CREATE TYPE transaction_enum AS ENUM ('bank', 'transfer', 'stock');
+CREATE Table Transaction (
+    tid SERIAL PRIMARY KEY,
+    time_stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    pid SERIAL NOT NULL REFERENCES Portfolio (pid)
+        ON DELETE CASCADE,
+    transaction_type transaction_enum NOT NULL DEFAULT 'bank',
+    amount float NOT NULL,
+    other_pid INT DEFAULT NULL REFERENCES Portfolio(pid) 
+        ON DELETE CASCADE,
+    stock_symbol VARCHAR(5) REFERENCES Stock(symbol)
+        ON DELETE CASCADE,
+    stock_shares int
 );

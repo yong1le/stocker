@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { buyStock } from "../server-actions";
 import { useRouter } from "next/navigation";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 const PortfolioBuyAction = ({ username, pid, stocks }) => {
   const router = useRouter();
@@ -55,11 +56,11 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
                 <SelectValue placeholder="Select stock" />
               </SelectTrigger>
               <SelectContent>
-                  {stocks.map((e) => (
-                    <SelectItem key={e.symbol} value={e.symbol}>
-                      {e.symbol} - ${e.value}
-                    </SelectItem>
-                  ))}
+                {stocks.map((e) => (
+                  <SelectItem key={e.symbol} value={e.symbol}>
+                    {e.symbol} - ${e.value}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -71,7 +72,9 @@ const PortfolioBuyAction = ({ username, pid, stocks }) => {
             </div>
 
             <DialogFooter>
-              <Button type="submit">Buy</Button>
+              <DialogClose asChild>
+                <Button type="submit">Buy</Button>
+              </DialogClose>
             </DialogFooter>
           </form>
         </DialogContent>

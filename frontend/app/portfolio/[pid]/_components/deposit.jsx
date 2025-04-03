@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { depositPortfolio } from "../server-actions";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 const PortfolioDepositAction = ({ username, pid, portfolios }) => {
   const router = useRouter();
@@ -71,7 +72,7 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
               </SelectContent>
             </Select>
 
-            <div className="grid g ap-2 my-2">
+            <div className="grid gap-2 my-2">
               <div className="flex items-center">
                 <Label htmlFor="amount">Amount</Label>
               </div>
@@ -79,7 +80,9 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
             </div>
 
             <DialogFooter>
-              <Button type="submit">Deposit</Button>
+              <DialogClose asChild>
+                <Button type="submit">Deposit</Button>
+              </DialogClose>
             </DialogFooter>
           </form>
         </DialogContent>
