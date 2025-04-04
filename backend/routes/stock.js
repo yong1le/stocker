@@ -1,9 +1,40 @@
 import e, { Router } from "express";
 import { query, getClient } from "../db/index.js";
 import { SLR } from "ml-regression";
-// import linearRegession from "ml-regression"
 
 export const stock = Router();
+
+stock.post("/create", async (req, res) => {
+  const { date, symbol, open, high, low, close, volume } = req.body;
+
+  console.log(date, symbol, open, high, low, close, volume);
+  try {
+    const result = await query(
+      `
+        INSERT INTO Stockdata (time_stamp, symbol, open, high, low, close, volume)
+        VALUES
+        ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *;
+      `,
+      [
+        new Date(date),
+        symbol,
+        Number(open),
+        Number(high),
+        Number(low),
+        Number(close),
+        Number(volume),
+      ]
+    );
+
+    if (result.rowCount === 0)
+      throw Error(`Failed to insert ${symbol} @ ${date}`);
+    res.send({ success: true });
+  } catch (e) {
+    console.log(e);
+    res.send({ success: false }).status(400);
+  }
+});
 
 stock.get("/all", async (req, res) => {
   try {
@@ -180,7 +211,7 @@ stock.get("/statistic/:symbol/:interval", async (req, res) => {
 
     return res.json({
       cov: Number(result.rows[0].cov.toFixed(2)),
-      beta: Number(result.rows[0].beta.toFixed(2))
+      beta: Number(result.rows[0].beta.toFixed(2)),
     });
   } catch (e) {
     console.log(e);
