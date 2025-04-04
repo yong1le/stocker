@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardTitle } from "@/components/ui/card";
 import StocklistAddAction from "./_components/add";
 import ReviewList from "./_components/ReviewList";
+import StockHoldingList from "@/components/StockHoldingList";
 
 const StocklistView = async ({ params }) => {
   const slid = (await params).slid;
@@ -80,19 +81,7 @@ const StocklistView = async ({ params }) => {
             </CardTitle>
 
             <div className="flex flex-col gap-2">
-              {stocklist.stocks &&
-                stocklist.stocks.map((e, i) => (
-                  <Card
-                    className="flex flex-row gap-2 items-start justify-between p-4"
-                    key={i}
-                  >
-                    <CardTitle>{e.symbol}</CardTitle>
-                    <div className="flex flex-col gap-2">
-                      <p>Shares: {e.share}</p>
-                      <p>Total value: {Number(e.value).toFixed(2)}</p>
-                    </div>
-                  </Card>
-                ))}
+              <StockHoldingList stocks={stocklist.stocks}/>
             </div>
           </div>
         )}

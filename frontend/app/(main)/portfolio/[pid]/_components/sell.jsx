@@ -43,7 +43,7 @@ const PortfolioSellAction = ({ username, pid, stocks }) => {
     <div>
       <Dialog>
         <DialogTrigger asChild>
-          <Button>Sell</Button>
+          <Button className="w-full">Sell</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <form action={sellStockAction}>

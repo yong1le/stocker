@@ -33,7 +33,7 @@ const PortfolioWithdrawalAction = ({ username, pid }) => {
     <div>
       <Dialog>
         <DialogTrigger asChild>
-          <Button>Wtihdrawal</Button>
+          <Button className="w-full">Wtihdrawal</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <form action={withdrawAction}>

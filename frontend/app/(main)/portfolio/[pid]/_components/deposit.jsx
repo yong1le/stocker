@@ -40,7 +40,7 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
     <div>
       <Dialog>
         <DialogTrigger asChild>
-          <Button>Deposit</Button>
+          <Button className="w-full">Deposit</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <form action={depositAction}>

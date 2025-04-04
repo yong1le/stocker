@@ -3,8 +3,16 @@ import React from "react";
 import { getUserServer } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Card, CardTitle } from "@/components/ui/card";
 import NewPortfolio from "./_components/new-portfolio";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const PortfolioListPage = async () => {
   const user = await getUserServer();
@@ -33,18 +41,28 @@ const PortfolioListPage = async () => {
 
   return (
     <div className="flex flex-col gap-2 m-2 items-start">
-      <h1>Portfolios</h1>
-      <NewPortfolio username={user} />
-      {portfolios &&
-        portfolios.map((e) => (
-          <Card key={e.name} className="p-2">
-            <CardTitle className="text-3xl">
-              <Link href={`/portfolio/${e.pid}`}>
-                {e.name} - ${Number(e.amount).toFixed(2)}
-              </Link>
-            </CardTitle>
-          </Card>
-        ))}
+      <Table>
+        <TableCaption>
+          <NewPortfolio username={user} />
+        </TableCaption>
+        <TableHeader className="bg-stone-100">
+          <TableRow>
+            <TableHead className="w-[100px]">Portfolio</TableHead>
+            <TableHead className="text-right">Cash</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {portfolios &&
+            portfolios.map((e) => (
+              <TableRow key={e.name}>
+                <TableCell className="font-medium">
+                  <Link href={`/portfolio/${e.pid}`}>{e.name}</Link>
+                </TableCell>
+                <TableCell className="text-right">{e.amount}</TableCell>
+              </TableRow>
+            ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };

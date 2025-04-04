@@ -7,9 +7,9 @@ import PortfolioDepositAction from "./_components/deposit";
 import PortfolioWithdrawalAction from "./_components/withdrawal";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import StockHolding from "@/components/stockholding";
 import PortfolioSellAction from "./_components/sell";
 import CorrelationMatrix from "./_components/correlation";
+import StockHoldingList from "@/components/StockHoldingList";
 
 const PortfolioView = async ({ params }) => {
   const pid = (await params).pid;
@@ -73,53 +73,47 @@ const PortfolioView = async ({ params }) => {
   const portfolios = await getPortfolios(user);
 
   return (
-    <div className="m-5 flex flex-row gap-5">
-      <Card className="p-4 flex-2">
-        {portfolio && (
-          <div className="flex flex-col gap-3">
-            <CardTitle className="text-4xl">
-              {portfolio.name} - ${Number(portfolio.value).toFixed(2)}
-            </CardTitle>
-            <div>
-              <p>Cash: ${Number(portfolio.amount).toFixed(2)}</p>
-            </div>
+    <div className="m-5">
+      <Card className="p-4 flex flex-row gap-5">
+        <div className="w-4/5">
+          {portfolio && (
+            <div className="flex flex-col gap-3">
+              <CardTitle className="text-4xl">
+                {portfolio.name} - ${Number(portfolio.value).toFixed(2)}
+              </CardTitle>
+              <div>
+                <p>Cash: ${Number(portfolio.amount).toFixed(2)}</p>
+              </div>
 
-            <CorrelationMatrix username={user} pid={pid}/>
+              <CorrelationMatrix username={user} pid={pid} />
 
-            <div className="flex flex-col gap-2">
-              {portfolio.stocks &&
-                portfolio.stocks.map((e, i) => (
-                  <StockHolding
-                    key={i}
-                    symbol={e.symbol}
-                    shares={e.share}
-                    value={e.value}
-                  />
-                ))}
+              <div className="flex flex-col gap-2">
+                <StockHoldingList stocks={portfolio.stocks}/>
+              </div>
             </div>
-          </div>
-        )}
-      </Card>
-      <Card className="p-4">
-        <Link href={`/portfolio/${pid}/transactions`}>
-          <Button>Transactions</Button>
-        </Link>
-        <PortfolioBuyAction username={user} pid={pid} stocks={stocks} />
-        <PortfolioSellAction
-          username={user}
-          pid={pid}
-          stocks={portfolio.stocks}
-        />
-        <PortfolioDepositAction
-          username={user}
-          pid={pid}
-          portfolios={portfolios}
-        />
-        <PortfolioWithdrawalAction
-          username={user}
-          pid={pid}
-          portfolios={portfolios}
-        />
+          )}
+        </div>
+        <div className="flex flex-col gap-4">
+          <Link href={`/portfolio/${pid}/transactions`}>
+            <Button className="w-full">Transactions</Button>
+          </Link>
+          <PortfolioBuyAction username={user} pid={pid} stocks={stocks} />
+          <PortfolioSellAction
+            username={user}
+            pid={pid}
+            stocks={portfolio ? portfolio.stocks : [] || []}
+          />
+          <PortfolioDepositAction
+            username={user}
+            pid={pid}
+            portfolios={portfolios}
+          />
+          <PortfolioWithdrawalAction
+            username={user}
+            pid={pid}
+            portfolios={portfolios}
+          />
+        </div>
       </Card>
     </div>
   );
