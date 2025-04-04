@@ -3,47 +3,52 @@ import { query, getClient } from "../db/index.js";
 
 export const portfolio = Router();
 
+export const createNewPortfolio = async (client, username, pname) => {
+  const result = await client.query(
+    `
+      INSERT INTO folder (folder_name)
+      VALUES ($1)
+      RETURNING *
+    `,
+    [pname]
+  );
+  if (result.rowCount === 0) throw Error("Failed to create folder");
+
+  const fid = result.rows[0].fid;
+
+  if (!fid) throw Error("Failed to create folder");
+
+  await client.query(
+    `
+      INSERT INTO creates
+      VALUES ($1, $2)
+    `,
+    [username, fid]
+  );
+  await client.query(
+    `
+      INSERT INTO portfolio
+      VALUES ($1, 0)
+    `,
+    [fid]
+  );
+
+  return fid;
+};
+
 /** Username creates a new portfolio with name slname. */
 portfolio.post("/create", async (req, res) => {
   const { username, pname } = req.body;
 
   const client = await getClient();
-  client.query("BEGIN");
+  await client.query("BEGIN");
   try {
-    const result = await client.query(
-      `
-      INSERT INTO folder (folder_name)
-      VALUES ($1)
-      RETURNING *
-    `,
-      [pname]
-    );
-    if (result.rowCount === 0) throw Error("Failed to create folder");
-
-    const fid = result.rows[0].fid;
-
-    if (!fid) throw Error("Failed to create folder");
-
-    await client.query(
-      `
-      INSERT INTO creates
-      VALUES ($1, $2)
-    `,
-      [username, fid]
-    );
-    await client.query(
-      `
-      INSERT INTO portfolio
-      VALUES ($1, 0)
-    `,
-      [fid]
-    );
-
-    client.query("COMMIT");
+    const fid = createNewPortfolio(username, pname);
     res.json({ pid: fid });
+    await client.query("COMMIT");
   } catch (e) {
     console.log(e);
-    client.query("ROLLBACK");
+    await client.query("ROLLBACK");
     res.json({ pid: -1 }).status(400);
   } finally {
     client.release();
@@ -55,7 +60,7 @@ portfolio.delete("/delete/:username/:fid", async (req, res) => {
   const fid = req.params.fid;
 
   const client = await getClient();
-  client.query("BEGIN");
+  await client.query("BEGIN");
   try {
     const result = await client.query(
       `
@@ -68,11 +73,11 @@ portfolio.delete("/delete/:username/:fid", async (req, res) => {
     );
     if (result.rowCount === 0) throw Error("Failed to delete folder");
 
-    client.query("COMMIT");
+    await client.query("COMMIT");
     res.json({ success: true });
   } catch (e) {
     console.log(e);
-    client.query("ROLLBACK");
+    await client.query("ROLLBACK");
     res.json({ success: false }).status(400);
   } finally {
     client.release();
@@ -208,7 +213,7 @@ portfolio.put("/withdraw/:username/:pid", async (req, res) => {
   const { amount } = req.body;
 
   const client = await getClient();
-  client.query("BEGIN");
+  await client.query("BEGIN");
   try {
     const result = await client.query(
       `
@@ -237,10 +242,10 @@ portfolio.put("/withdraw/:username/:pid", async (req, res) => {
     )
       throw Error("Failed to create transaction.");
 
-    client.query("COMMIT");
+    await client.query("COMMIT");
     res.json({ success: true });
   } catch (e) {
-    client.query("ROLLBACK");
+    await client.query("ROLLBACK");
     console.log(e);
     res.json({ success: false }).status(400);
   } finally {
@@ -317,11 +322,11 @@ portfolio.put("/deposit/:username/:pid1/:pid2", async (req, res) => {
     )
       throw Error("Failed to create transaction.");
 
-    client.query("COMMIT");
+    await client.query("COMMIT");
     res.json({ success: true });
   } catch (e) {
     console.log(e);
-    client.query("ROLLBACK");
+    await client.query("ROLLBACK");
     res.json({ success: false }).status(400);
   } finally {
     client.release();
@@ -335,7 +340,7 @@ portfolio.put("/deposit/:username/:pid", async (req, res) => {
   const { amount } = req.body;
 
   const client = await getClient();
-  client.query("BEGIN");
+  await client.query("BEGIN");
   try {
     const result = await client.query(
       `
@@ -364,10 +369,10 @@ portfolio.put("/deposit/:username/:pid", async (req, res) => {
     )
       throw Error("Failed to create transaction.");
 
-    client.query("COMMIT");
+    await client.query("COMMIT");
     res.json({ success: true });
   } catch (e) {
-    client.query("ROLLBACK");
+    await client.query("ROLLBACK");
     console.log(e);
     res.json({ success: false }).status(400);
   } finally {

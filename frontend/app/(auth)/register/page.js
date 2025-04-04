@@ -30,7 +30,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className={"flex flex-col gap-6"}>
+    <div className={"flex flex-col gap-6 w-1/4"}>
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
