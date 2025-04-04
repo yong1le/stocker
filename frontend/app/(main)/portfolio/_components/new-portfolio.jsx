@@ -29,7 +29,7 @@ const NewPortfolio = ({ username }) => {
     }
   };
   return (
-    <div>
+    <div className="flex flex-row justify-end">
       <Dialog>
         <DialogTrigger asChild>
           <Button>New Portfolio</Button>

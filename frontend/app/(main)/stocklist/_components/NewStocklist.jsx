@@ -30,7 +30,7 @@ const NewStocklist = ({ username }) => {
     }
   };
   return (
-    <div>
+    <div className="flex flex-row justify-end">
       <Dialog>
         <DialogTrigger asChild>
           <Button>New Stocklist</Button>
@@ -45,7 +45,6 @@ const NewStocklist = ({ username }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-
             <div className="flex justify-end gap-2">
               <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
@@ -58,7 +57,6 @@ const NewStocklist = ({ username }) => {
                   disabled={!name}
                 >
                   Create
-                  {/* {isSubmitting ? "Sending..." : "Send Request"} */}
                 </Button>
               </DialogClose>
             </div>

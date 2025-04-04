@@ -51,3 +51,8 @@ export const createReview = async (username, content, slid) => {
 export const viewAllReviews = async (slid) => {
   return apiCall(`/stocklist/reviews/view/all/${slid}`);
 };
+
+export const removeStocklist = async (slid, username) => {
+  console.log(username, slid );
+  return apiCall(`/stocklist/remove/${slid}`, "DELETE", {username});
+};

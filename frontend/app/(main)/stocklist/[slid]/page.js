@@ -5,6 +5,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import StocklistAddAction from "./_components/add";
 import ReviewList from "./_components/ReviewList";
 import StockHoldingList from "@/components/StockHoldingList";
+import CorrelationMatrix from "@/components/correlation";
 
 const StocklistView = async ({ params }) => {
   const slid = (await params).slid;
@@ -65,6 +66,7 @@ const StocklistView = async ({ params }) => {
 
   const stocklist = await getStocklistInfo(user, slid);
   const stocks = await getStocks();
+  console.log(stocklist);
 
   return (
     <div className="m-5 flex flex-col gap-5">
@@ -72,21 +74,26 @@ const StocklistView = async ({ params }) => {
         {stocklist !== null && (
           <div className="flex flex-col gap-3">
             <CardTitle className="text-4xl">
-            <div className="flex justify-between">
+              <div className="flex justify-between">
 
-              {stocklist.name}
-              {/* - ${Number(stocklist.value).toFixed(2)} */}
-                <StocklistAddAction username={user} slid={slid} stocks={stocks} />
+                {stocklist.name}
+                {/* - ${Number(stocklist.value).toFixed(2)} */}
+                {user === stocklist.username ? (
+                  <StocklistAddAction username={user} slid={slid} stocks={stocks} />
+                ) : (<></>)
+                }
               </div>
             </CardTitle>
 
+            <CorrelationMatrix username={user} pid={slid} />
+
             <div className="flex flex-col gap-2">
-              <StockHoldingList stocks={stocklist.stocks}/>
+              <StockHoldingList stocks={stocklist.stocks} />
             </div>
           </div>
         )}
       </Card>
-      <ReviewList username={user} slid={slid}  />
+      <ReviewList username={user} slid={slid} />
     </div>
   );
 };

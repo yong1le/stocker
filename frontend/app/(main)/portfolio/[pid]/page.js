@@ -8,7 +8,7 @@ import PortfolioWithdrawalAction from "./_components/withdrawal";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import PortfolioSellAction from "./_components/sell";
-import CorrelationMatrix from "./_components/correlation";
+import CorrelationMatrix from "@/components/correlation";
 import StockHoldingList from "@/components/StockHoldingList";
 
 const PortfolioView = async ({ params }) => {

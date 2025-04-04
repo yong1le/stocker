@@ -43,7 +43,8 @@ CREATE TABLE Creates (
         ON DELETE CASCADE
 );
 CREATE TABLE Stockholding (
-    fid int  REFERENCES Folder(fid) NOT NULL, 
+    fid int  REFERENCES Folder(fid) NOT NULL
+        ON DELETE CASCADE, 
     symbol varchar(5)  REFERENCES Stock(symbol) NOT NULL, 
     share int NOT NULL CHECK (share > 0),
     PRIMARY KEY (fid, symbol)
@@ -62,13 +63,15 @@ CREATE Table Friends (
 CREATE TABLE Shares(
     creator VARCHAR(25) REFERENCES Useraccount(username),
     shared_with VARCHAR(25) REFERENCES Useraccount(username),
-    slid int REFERENCES Stocklist(slid), 
+    slid int REFERENCES Stocklist(slid)
+        ON DELETE CASCADE, 
     PRIMARY KEY (creator, shared_with, slid)
 );
 
 CREATE TABLE Reviews(
     reviewer VARCHAR(25) REFERENCES Useraccount(username),
-    slid int REFERENCES Stocklist(slid), 
+    slid int REFERENCES Stocklist(slid)
+        ON DELETE CASCADE, 
     content VARCHAR(4000) DEFAULT '',
     PRIMARY KEY (reviewer, slid)
 );

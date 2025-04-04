@@ -60,25 +60,28 @@ stocklist.post('/create', async (req, res) => {
 });
 
 // Remove stock list
-stocklist.post("/remove/:slid", async (req, res) => {
-  const slid = req.params.slid;
+stocklist.delete("/remove/:slid", async (req, res) => {
+  const slid = Number(req.params.slid);
   const { username } = req.body;
-
+  console.log(username, slid)
+  
   try {
     const result = await query(
       `
-      DELETE FROM stocklist
-      WHERE (username = $1) AND friend_status = false
-      RETURNING *
+      DELETE FROM folder
+      WHERE fid=$2 AND EXISTS (
+        SELECT fid from Creates WHERE fid = $2 AND username = $1
+      )
       `,
       [username, slid]
     );
+    console.log(result.rowCount);
 
     if (result.rowCount === 0) {
-      return res.status(400).json({ message: "No pending request found to reject." });
+      return res.status(400).json({ message: "No stocklist to be removed." });
     }
 
-    res.json({ message: "Friend request rejected." });
+    res.json({ message: "Stocklist removed." });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error." });
@@ -241,7 +244,7 @@ stocklist.post('/share/:slid', async (req, res) => {
     const friendshipResult = await client.query(
       `
       SELECT * FROM friends
-      WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1) AND friend_status = accepted
+      WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1) AND friend_status = 'accepted'
       `,
       [username, friend]
     );
