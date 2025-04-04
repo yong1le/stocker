@@ -58,7 +58,7 @@ const ShareList = ({ username, slid }) => {
         </DialogHeader>
 
         <div className="max-h-[300px] overflow-y-auto">
-          {friends.length > 0 ? (
+          {friends && friends.length > 0 ? (
             <div className="space-y-2">
               {friends.map((friend, index) => (
                 <div
