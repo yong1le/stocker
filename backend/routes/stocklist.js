@@ -241,7 +241,7 @@ stocklist.post('/share/:slid', async (req, res) => {
     const friendshipResult = await client.query(
       `
       SELECT * FROM friends
-      WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1) AND friend_status = true
+      WHERE (uid1 = $1 AND uid2 = $2) OR (uid1 = $2 AND uid2 = $1) AND friend_status = accepted
       `,
       [username, friend]
     );
