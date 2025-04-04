@@ -26,10 +26,15 @@ const MainLayout = async ({ children }) => {
           <Link href="/friend" className={linkStyle}>
             Friends
           </Link>
+          <Link href="/stock" className={linkStyle}>
+            Stocks
+          </Link>
         </div>
         <div className="flex flex-row gap-4 items-center">
           {user}
-          <Button className="hover:cursor-pointer" onClick={logoutUser}>Logout</Button>
+          <Button className="hover:cursor-pointer" onClick={logoutUser}>
+            Logout
+          </Button>
         </div>
       </div>
       {children}
