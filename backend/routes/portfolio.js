@@ -43,7 +43,7 @@ portfolio.post("/create", async (req, res) => {
   const client = await getClient();
   await client.query("BEGIN");
   try {
-    const fid = createNewPortfolio(username, pname);
+    const fid = createNewPortfolio(client, username, pname);
     res.json({ pid: fid });
     await client.query("COMMIT");
   } catch (e) {
