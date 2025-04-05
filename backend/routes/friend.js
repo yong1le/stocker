@@ -264,22 +264,22 @@ friend.post("/remove/:username", async (req, res) => {
 });
 
 // Cancel a friend request
-friend.post("/cancel/:username", async (req, res) => {
+friend.delete("/cancel/:username", async (req, res) => {
   const username = req.params.username;
-  const { friend } = req.body; // username reject friend request from friend
-
+  const { friend } = req.body; 
+  console.log(username, friend);
   try {
     const result = await query(
       `
       DELETE FROM friends
-      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = 'pending'
+      WHERE (uid1 = $1 AND uid2 = $2) AND friend_status = 'pending'
       RETURNING *
       `,
       [username, friend]
     );
 
     if (result.rowCount === 0) {
-      return res.status(400).json({ message: "No pending friend found to reject." });
+      return res.status(400).json({ message: "No pending friend found to cancel." });
     }
 
     res.json({ message: "Friend request removed." });

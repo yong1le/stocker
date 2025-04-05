@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 
 const ShareList = ({ username, slid, owner }) => {
   const router = useRouter();
-  console.log(username, slid, owner);
 
   const [friends, setFriends] = useState([]);
   const [already, setAlready] = useState([]);

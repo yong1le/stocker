@@ -219,10 +219,39 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     if (result.rowCount === 0)
       throw Error("This stock list does not belong to this user.");
 
+        // Get the market value
+        const mv = await query(
+          `
+          SELECT slid, COALESCE(SUM(value),0) AS value
+          FROM (
+            SELECT slid, close * share as value
+            FROM (
+              (
+                (SELECT * FROM Stocklist WHERE slid = $1)
+                LEFT JOIN Stockholding
+                ON fid = slid
+              ) NATURAL LEFT JOIN
+              (
+                SELECT symbol, close FROM (
+                  Stockdata s1 NATURAL JOIN (
+                    SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
+                    FROM Stockdata s2
+                    GROUP BY symbol 
+                  )
+                )
+              )
+            )
+          )
+          GROUP BY slid
+          `,
+    
+          [slid]
+        );
+
     res.json({
       slid: result.rows[0].slid,
       name: result.rows[0].folder_name,
-      amount: result.rows[0].amount,
+      marketvalue: Number(Number(mv.rows[0].value || 0).toFixed(2)),
       username: result.rows[0].username,
       visibility: result.rows[0].visibility,
       stocks: result.rows

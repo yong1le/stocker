@@ -48,7 +48,6 @@ const StocklistView = async ({ params }) => {
 
   const stocklist = await getStocklistInfo(user, slid);
   const stocks = await getStocks();
-  console.log(stocklist)
 
   return (
     <div className="m-5 flex flex-col gap-5">

@@ -22,7 +22,6 @@ const StockListPage = async () => {
   if (!user) redirect("/login");
 
   const stocklists = await fetchStocklists(user);
-  console.log(stocklists);
   return (
     <div className="flex flex-col gap-2 m-2  ">
       <Table>

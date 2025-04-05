@@ -57,7 +57,8 @@ CREATE Table Friends (
     friend_status friend_enum DEFAULT 'pending',
     reject_time TIMESTAMP NULL,
     remove_time TIMESTAMP NULL,
-    PRIMARY Key(uid1, uid2)
+    PRIMARY Key(uid1, uid2),
+    CHECK (uid1 <> uid2)
 );
 
 CREATE TABLE Shares(

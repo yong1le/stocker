@@ -51,3 +51,7 @@ export const rejectFriendRequest = async (username, friend) => {
 export const removeFriend = async (username, friend) => {
   return apiCall(`/friend/remove/${username}`, "POST", { friend });
 };
+
+export const cancelFriendReq = async (username, friend) => {
+  return apiCall(`/friend/cancel/${username}`, "DELETE", { friend });
+};

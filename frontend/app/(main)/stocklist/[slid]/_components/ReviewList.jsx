@@ -92,20 +92,68 @@ const ReviewList = ({ username, slid }) => {
 
       <div className="space-y-2">
         {reviews.length > 0 ? (
-          reviews.map(
-            (review, index) =>
-              review.content.length > 0 ? (
-                <Card key={index} className="p-2 flex flex-row justify-between">
-                  <CardContent>
-                    <p className="font-semibold">{review.reviewer}</p>
-                    <p>{review.content}</p>
-                  </CardContent>
-                  <RemoveReview username={username} slid={slid} reviewer={review.reviewer} owner={review.owner}/>
-                </Card>
-              ) : (<p key={index} ></p>)
+          reviews.map((review, index) =>
+            review.content.length > 0 ? (
+              <Card key={index} className="p-2 flex flex-row justify-between">
+                <CardContent>
+                  {console.log(review)}
+                  <p className="font-semibold">{review.reviewer}</p>
+                  <p>{review.content}</p>
+                </CardContent>
+                <div className="flex flex-row gap-2">
+                  {review.reviewer === username && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>Edit Review</Button>
+                      </DialogTrigger>
+
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Change Review</DialogTitle>
+                          <DialogDescription>Edit Review</DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4">
+                          <Textarea
+                            placeholder={review.content}
+                            value={review.content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className="w-full h-24 resize-none p-2"
+                          />
+
+                          <div className="flex justify-end gap-2">
+                            <DialogClose asChild>
+                              <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                            <DialogClose asChild>
+                              <Button
+                                type="button"
+                                onClick={handleContent}
+                                disabled={!content.trim()}
+                              >
+                                Submit Review
+                              </Button>
+                            </DialogClose>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+
+                  <RemoveReview
+                    username={username}
+                    slid={slid}
+                    reviewer={review.reviewer}
+                    owner={review.owner}
+                  />
+                </div>
+              </Card>
+            ) : (
+              <p key={index}></p>
+            )
           )
         ) : (
-          <p >No reviews yet.</p>
+          <p>No reviews yet.</p>
         )}
       </div>
     </Card>

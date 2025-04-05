@@ -141,6 +141,13 @@ const Stock = () => {
           </div>
         )}
       </div>
+      <div className="flex flex-row gap-2 self-center">
+        <Button onClick={() => setInterval(7)}>7 days</Button>
+        <Button onClick={() => setInterval(30)}>1 months</Button>
+        <Button onClick={() => setInterval(90)}>1 quarter</Button>
+        <Button onClick={() => setInterval(365)}>1 year</Button>
+        <Button onClick={() => setInterval(1825)}>5 years</Button>
+      </div>
       <div className="w-4/5">
         <ChartContainer config={chartConfig}>
           <AreaChart
@@ -183,13 +190,7 @@ const Stock = () => {
         </ChartContainer>
       </div>
 
-      <div className="flex flex-row gap-2 self-center">
-        <Button onClick={() => setInterval(7)}>7 days</Button>
-        <Button onClick={() => setInterval(30)}>1 months</Button>
-        <Button onClick={() => setInterval(90)}>1 quarter</Button>
-        <Button onClick={() => setInterval(365)}>1 year</Button>
-        <Button onClick={() => setInterval(1825)}>5 years</Button>
-      </div>
+     
     </div>
   );
 };

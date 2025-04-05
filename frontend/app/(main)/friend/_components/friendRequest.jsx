@@ -16,7 +16,7 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
 } from "../server-actions";
-
+import { cancelFriendReq } from "../server-actions";
 const FriendRequestList = ({
   username,
   refreshFriends,
@@ -62,6 +62,14 @@ const FriendRequestList = ({
     }
   };
 
+  const handleCancel = async (friend) => {
+    const success = await cancelFriendReq(username, friend);
+    console.log("cancel");
+    if (success) {
+      refreshFriends();
+      loadRequests();
+    }
+  };
   const buttonLabel =
     requestType === "incoming" ? "Incoming Requests" : "Outgoing Requests";
 
@@ -123,7 +131,7 @@ const FriendRequestList = ({
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleAction(request, "reject")}
+                          onClick={() => handleCancel(request)}
                         >
                           Cancel
                         </Button>
