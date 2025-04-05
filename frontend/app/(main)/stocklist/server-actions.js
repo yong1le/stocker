@@ -53,6 +53,17 @@ export const viewAllReviews = async (slid) => {
 };
 
 export const removeStocklist = async (slid, username) => {
-  console.log(username, slid );
   return apiCall(`/stocklist/remove/${slid}`, "DELETE", {username});
+};
+
+export const updateVisibility = async (slid, username, visibility) => {
+  return apiCall(`/stocklist/visibility/${slid}`, "POST", {username, visibility});
+}; 
+
+export const sharedAlready = async (username, slid) => {
+  return apiCall(`/stocklist/shared/already/${slid}/${username}`);
+};
+
+export const removeReview = async (slid, username, reviewer) => {
+  return apiCall(`/stocklist/review/remove/${slid}`, "DELETE", {username, reviewer});
 };

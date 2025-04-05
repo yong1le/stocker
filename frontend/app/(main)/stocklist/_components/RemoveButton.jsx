@@ -8,7 +8,6 @@ const RemoveButton = ({ username, slid }) => {
   const router = useRouter();
 
   const handleAction = async () => {
-    console.log("here");
     const success = await removeStocklist(slid, username);
     if (success) {
       router.refresh();

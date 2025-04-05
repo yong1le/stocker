@@ -22,6 +22,7 @@ const StockListPage = async () => {
   if (!user) redirect("/login");
 
   const stocklists = await fetchStocklists(user);
+  console.log(stocklists);
   return (
     <div className="flex flex-col gap-2 m-2  ">
       <Table>
@@ -43,11 +44,11 @@ const StockListPage = async () => {
                 <TableCell className="font-medium">
                   <Link href={`/stocklist/${e.slid}`}>{e.name}</Link>
                 </TableCell>
-                <TableCell className="">
+                <TableCell className="font-medium text-center">
                   {e.visibility}
                 </TableCell>
-                <TableCell>
-                  <ShareList username={e.username} slid={e.slid} />
+                <TableCell >
+                  <ShareList username={user} slid={e.slid} owner={e.username}/>
                 </TableCell>
                 <TableCell>
                   <RemoveButton username={e.username} slid={e.slid} />

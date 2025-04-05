@@ -63,8 +63,7 @@ stocklist.post('/create', async (req, res) => {
 stocklist.delete("/remove/:slid", async (req, res) => {
   const slid = Number(req.params.slid);
   const { username } = req.body;
-  console.log(username, slid)
-  
+
   try {
     const result = await query(
       `
@@ -75,7 +74,6 @@ stocklist.delete("/remove/:slid", async (req, res) => {
       `,
       [username, slid]
     );
-    console.log(result.rowCount);
 
     if (result.rowCount === 0) {
       return res.status(400).json({ message: "No stocklist to be removed." });
@@ -92,8 +90,10 @@ stocklist.delete("/remove/:slid", async (req, res) => {
 //update status of stocklist
 stocklist.post('/visibility/:slid', async (req, res) => {
   const slid = req.params.slid;
-  const { visibility } = req.body;
+  const { username, visibility } = req.body;
   const client = await getClient();
+  client.query("BEGIN");
+
   try {
     const result = await client.query(
       `
@@ -107,6 +107,18 @@ stocklist.post('/visibility/:slid', async (req, res) => {
 
     if (result.rowCount === 0) throw Error("Stocklist not found or update failed");
 
+    if (visibility === 'private') {
+      await client.query(
+        `
+        DELETE FROM shares
+        WHERE slid = $1
+        AND creator = $2
+        `,
+        [slid, username]
+      );
+    }
+
+    await client.query('COMMIT');
     res.json({ status: visibility, slid: slid });
   } catch (e) {
     console.log(e);
@@ -116,7 +128,7 @@ stocklist.post('/visibility/:slid', async (req, res) => {
   }
 });
 
-//update status of stocklist
+//update status of reviews
 stocklist.post('/reviewcontent/:slid', async (req, res) => {
   const slid = req.params.slid;
   const { content } = req.body;
@@ -151,7 +163,7 @@ stocklist.get('/view/all/:username', async (req, res) => {
   try {
     const result = await client.query(
       `
-      SELECT s.slid, f.folder_name, s.visibility, c.username
+      SELECT DISTINCT s.slid, f.folder_name, s.visibility, c.username
       FROM Stocklist s
       JOIN Folder f ON s.slid = f.fid
       JOIN Creates c ON f.fid = c.fid
@@ -161,12 +173,7 @@ stocklist.get('/view/all/:username', async (req, res) => {
       [username]
     );
 
-    if (result.rowCount === 0) {
-      throw Error("No stocklists found or you have none.");
-    }
-
     res.json(result.rows.map(({ slid, folder_name, visibility, username }) => ({ slid: slid, name: folder_name, visibility: visibility, username: username })));
-    // res.json(result.rows.map(({ slid }) => slid));
   } catch (e) {
     console.log(e);
     res.status(400).json({ error: "Failed to retrieve stocklists." });
@@ -185,7 +192,7 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     const result = await query(
       `
     SELECT * FROM (
-     (
+    (
     SELECT f.*, s.*, c.username
     FROM ((Folder f
     JOIN Stocklist s ON f.fid = s.slid) JOIN Creates c ON f.fid = c.fid)
@@ -193,8 +200,9 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     AND (
       EXISTS (SELECT 1 FROM Creates c WHERE c.username = $1 AND c.fid = $2)
       OR EXISTS (SELECT 1 FROM Shares sh WHERE sh.shared_with = $1 AND sh.slid = $2)
+      OR s.visibility = 'public'
+      )
     )
-  )
       NATURAL LEFT JOIN
       (
         SELECT fid, symbol, share, share * close AS value  FROM (
@@ -223,6 +231,7 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
       name: result.rows[0].folder_name,
       amount: result.rows[0].amount,
       username: result.rows[0].username,
+      visibility: result.rows[0].visibility,
       stocks: result.rows
         .filter(({ symbol, share }) => symbol !== null && share !== null)
         .map(({ symbol, share, value }) => ({ symbol, share, value })),
@@ -300,6 +309,30 @@ stocklist.post('/share/:slid', async (req, res) => {
   }
 });
 
+stocklist.get('/shared/already/:slid/:username', async (req, res) => {
+  const slid = req.params.slid;
+  const username = req.params.username;
+
+  const client = await getClient();
+  try {
+    const result = await client.query(
+      `
+      SELECT shared_with
+      FROM shares
+      WHERE slid = $1 and creator = $2
+      `,
+      [slid, username]
+    );
+
+    res.json(result.rows.map(({ shared_with }) => shared_with));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error." });
+  } finally {
+    client.release();
+  }
+});
+
 stocklist.post('/create/review/:slid', async (req, res) => {
   const { username, content } = req.body;
   const slid = req.params.slid;
@@ -354,9 +387,10 @@ stocklist.get('/reviews/view/all/:slid', async (req, res) => {
   try {
     const reviewsResult = await client.query(
       `
-      SELECT * 
-      FROM reviews
-      WHERE slid = $1
+      SELECT r.*, c.username AS owner
+      FROM reviews r
+      JOIN Creates c ON r.slid = c.fid
+      WHERE r.slid = $1
       `,
       [slid]
     );
@@ -424,6 +458,55 @@ stocklist.post("/add", async (req, res) => {
     console.error(e);
     await client.query("ROLLBACK");
     res.json({ success: false });
+  } finally {
+    client.release();
+  }
+});
+
+stocklist.delete("/review/remove/:slid", async (req, res) => {
+  const slid = Number(req.params.slid);
+  const { username, reviewer } = req.body;
+
+  const client = await getClient();
+
+  await client.query("BEGIN");
+
+  try {
+    if (username !== reviewer) {
+      const createResult = await client.query(
+        `
+      SELECT * FROM Creates
+      WHERE username=$1 AND fid=$2
+      `,
+        [username, slid]
+      );
+
+      if (createResult.rowCount == 0) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({ message: `${username} is not the creator of stocklist ${slid}` });
+      }
+    }
+
+    const deleteResult = await client.query(
+      `
+      DELETE FROM reviews
+      WHERE slid=$2 AND reviewer=$1
+      `,
+      [reviewer, slid]
+    );
+
+    if (deleteResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "No reviewer that matched." });
+    }
+
+    await client.query("COMMIT");
+
+    res.status(200).json({ message: "Review removed." });
+  } catch (error) {
+    console.error(error);
+    await client.query("ROLLBACK");
+    res.status(500).json({ message: "Server error." });
   } finally {
     client.release();
   }

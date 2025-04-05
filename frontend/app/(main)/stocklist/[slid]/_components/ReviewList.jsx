@@ -13,6 +13,7 @@ import {
 import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { viewAllReviews, createReview } from "../../server-actions";
+import RemoveReview from "./RemoveReview";
 
 const ReviewList = ({ username, slid }) => {
   const [reviews, setReviews] = useState([]);
@@ -40,12 +41,11 @@ const ReviewList = ({ username, slid }) => {
     try {
       const newReview = await createReview(username, content, slid);
 
-      setContent(""); // Clear input field'
+      setContent("");
       fetchReviews();
     } catch (error) {
       console.error("Failed to submit review:", error);
     }
-    
   };
 
   return (
@@ -76,13 +76,13 @@ const ReviewList = ({ username, slid }) => {
                   <Button variant="outline">Cancel</Button>
                 </DialogClose>
                 <DialogClose asChild>
-                <Button
-                  type="button"
-                  onClick={handleContent}
-                  disabled={!content.trim()}
-                >
-                  Submit Review
-                </Button>
+                  <Button
+                    type="button"
+                    onClick={handleContent}
+                    disabled={!content.trim()}
+                  >
+                    Submit Review
+                  </Button>
                 </DialogClose>
               </div>
             </div>
@@ -92,16 +92,20 @@ const ReviewList = ({ username, slid }) => {
 
       <div className="space-y-2">
         {reviews.length > 0 ? (
-          reviews.map((review, index) => (
-            <Card key={index} className="p-2">
-              <CardContent>
-                <p className="font-semibold">{review.reviewer}</p>
-                <p>{review.content}</p>
-              </CardContent>
-            </Card>
-          ))
+          reviews.map(
+            (review, index) =>
+              review.content.length > 0 ? (
+                <Card key={index} className="p-2 flex flex-row justify-between">
+                  <CardContent>
+                    <p className="font-semibold">{review.reviewer}</p>
+                    <p>{review.content}</p>
+                  </CardContent>
+                  <RemoveReview username={username} slid={slid} reviewer={review.reviewer} owner={review.owner}/>
+                </Card>
+              ) : (<p >No reviews yet.</p>)
+          )
         ) : (
-          <p className="text-gray-500">No reviews yet.</p>
+          <p >No reviews yet.</p>
         )}
       </div>
     </Card>

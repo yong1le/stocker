@@ -6,6 +6,7 @@ import StocklistAddAction from "./_components/add";
 import ReviewList from "./_components/ReviewList";
 import StockHoldingList from "@/components/StockHoldingList";
 import CorrelationMatrix from "@/components/correlation";
+import Visibility from "./_components/Visibility";
 
 const StocklistView = async ({ params }) => {
   const slid = (await params).slid;
@@ -33,25 +34,6 @@ const StocklistView = async ({ params }) => {
     return json;
   };
 
-  const getStocklists = async (username) => {
-    const res = await fetch(
-      `http://localhost:8080/stocklist/view/all/${username}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!res.ok) {
-      window.alert("Failed to get stocklists");
-      return [];
-    }
-
-    return await res.json();
-  };
-
   const getStocks = async () => {
     const res = await fetch("http://localhost:8080/stock/all", {
       headers: {
@@ -66,7 +48,6 @@ const StocklistView = async ({ params }) => {
 
   const stocklist = await getStocklistInfo(user, slid);
   const stocks = await getStocks();
-  console.log(stocklist);
 
   return (
     <div className="m-5 flex flex-col gap-5">
@@ -77,11 +58,15 @@ const StocklistView = async ({ params }) => {
               <div className="flex justify-between">
 
                 {stocklist.name}
-                {/* - ${Number(stocklist.value).toFixed(2)} */}
-                {user === stocklist.username ? (
-                  <StocklistAddAction username={user} slid={slid} stocks={stocks} />
-                ) : (<></>)
-                }
+
+                  {user === stocklist.username ? (
+                    <div className="flex flex-row">
+                      <Visibility visibility={stocklist.visibility} slid={slid} username={user} />
+                      <StocklistAddAction username={user} slid={slid} stocks={stocks} />
+                    </div>
+                  ) :
+                    (<></>)
+                  }
               </div>
             </CardTitle>
 
