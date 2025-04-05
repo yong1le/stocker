@@ -22,7 +22,7 @@ const ReviewList = ({ username, slid }) => {
   const fetchReviews = async () => {
     if (!username) return;
     try {
-      const allReviews = await viewAllReviews(slid);
+      const allReviews = await viewAllReviews(username, slid);
       setReviews(allReviews);
     } catch (error) {
       console.error("Failed to load reviews:", error);

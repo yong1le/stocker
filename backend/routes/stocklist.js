@@ -41,13 +41,6 @@ stocklist.post('/create', async (req, res) => {
     `,
       [slid]
     );
-    await client.query(
-      `
-      INSERT INTO reviews(reviewer, slid, content)
-      VALUES ($1, $2, '')
-    `,
-      [username, slid]
-    );
     client.query("COMMIT");
     res.json({ slid: slid });
   } catch (e) {
@@ -224,7 +217,7 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     );
 
     if (result.rowCount === 0)
-      throw Error("This porfolio does not belong to this user.");
+      throw Error("This stock list does not belong to this user.");
 
     res.json({
       slid: result.rows[0].slid,
@@ -380,19 +373,24 @@ stocklist.post('/create/review/:slid', async (req, res) => {
   }
 });
 
-stocklist.get('/reviews/view/all/:slid', async (req, res) => {
+stocklist.get('/reviews/view/all/:username/:slid', async (req, res) => {
   const slid = req.params.slid;
+  const username = req.params.username;
 
   const client = await getClient();
   try {
     const reviewsResult = await client.query(
       `
       SELECT r.*, c.username AS owner
-      FROM reviews r
-      JOIN Creates c ON r.slid = c.fid
-      WHERE r.slid = $1
+      FROM (
+        (reviews r JOIN Creates c ON r.slid = c.fid)
+        JOIN Stocklist s ON r.slid = s.slid
+      )
+      WHERE r.slid = $1 AND (
+        r.reviewer = $2 OR c.username = $2 OR s.visibility = 'public'
+      )
       `,
-      [slid]
+      [slid, username]
     );
 
     res.json(reviewsResult.rows);

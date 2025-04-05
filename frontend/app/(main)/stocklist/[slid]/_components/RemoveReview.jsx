@@ -8,7 +8,7 @@ const RemoveReview = ({ username, slid, reviewer, owner }) => {
   const router = useRouter();
 
   const handleAction = async () => {
-    const success = await removeReview(slid, username, reviewer);
+    const success = await removeReview(slid, owner, reviewer);
     if (success) {
       router.refresh();
     }
