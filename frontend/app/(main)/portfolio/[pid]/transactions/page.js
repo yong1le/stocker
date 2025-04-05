@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getUserServer } from "@/lib/auth-server";
 import Link from "next/link";
 import React from "react";
@@ -38,52 +40,72 @@ const TransactionsPage = async ({ params }) => {
   const transactions = await getTransactions(user, pid);
   return (
     <div>
-      <Link href={`/portfolio/${pid}`}>
-        <Button>Back</Button>
-      </Link>
-      <div className="p-5 flex flex-col gap-4">
-        {transactions &&
-          transactions.map((e, i) => (
-            <Card className="p-2" key={i}>
-              <CardTitle>{e.transaction_type.toUpperCase()}</CardTitle>
-              <CardContent>
-                <p>Amount: {e.amount}</p>
-                {e.transaction_type === "bank" && (
-                  <p>Transfer {e.amount > 0 ? "from" : "to"} bank</p>
-                )}
-                {e.transaction_type === "transfer" && (
-                  <p>
-                    Transfer {e.amount > 0 ? "from " : "to "}
-                    <Link
-                      href={`/portfolio/${e.other_pid}`}
-                      className="underline"
-                    >
-                      {e.other_portfolio}
-                    </Link>
-                  </p>
-                )}
-                {e.transaction_type === "stock" && (
-                  <div>
+      <Table>
+        <TableCaption>
+          <Link href={`/portfolio/${pid}`}>
+            <Button className="hover:cursor-pointer ">Back</Button>
+          </Link>
+        </TableCaption>
+        <TableHeader className="bg-stone-100">
+          <TableRow>
+            <TableHead className="w-[100px]">Transaction Type</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>From/to</TableHead>
+            <TableHead>Stock Symbol</TableHead>
+            <TableHead>Stock Shares</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions &&
+            transactions.map((e, i) => (
+              <TableRow>
+                <TableCell>{e.transaction_type.toUpperCase()}</TableCell>
+                <TableCell>{Number(e.amount).toFixed(2)}</TableCell>
+                <TableCell>
+                  {e.transaction_type === "bank" ? (
                     <p>
-                      Stock:{" "}
+                      <b>{e.amount > 0 ? "From" : "To"}</b> Bank
+                    </p>
+                  ) : e.transaction_type === "transfer" ? (
+                    <p>
+                      <b>{e.amount > 0 ? "From " : "To "}</b>
                       <Link
-                        href={`/stock/${e.stock_symbol}`}
+                        href={`/portfolio/${e.other_pid}`}
                         className="underline"
                       >
-                        {e.stock_symbol}
+                        {e.other_portfolio}
                       </Link>
                     </p>
+                  ) : (
+                    <p>N/A</p>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {e.transaction_type === "stock" ? (
+                    <Link
+                      href={`/stock/${e.stock_symbol}`}
+                      className="underline"
+                    >
+                      {e.stock_symbol}
+                    </Link>
+                  ) : (
+                    <p>N/A</p>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {e.transaction_type === "stock" ? (
                     <p>
-                      Shares {e.amount > 0 ? "Sold" : "Bought"}:{" "}
+                      {e.amount > 0 && "-"}
                       {e.stock_shares}
                     </p>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter>{new Date(e.time_stamp).toString()}</CardFooter>
-            </Card>
-          ))}
-      </div>
+                  ) : (
+                    <p>N/A</p>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };

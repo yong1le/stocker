@@ -68,7 +68,7 @@ const AddFriend = ({ username, refreshFriends }) => {
               <Button variant="outline">Cancel</Button>
             </DialogClose>
             
-            <DialogClose asChild>
+            <div >
               <Button 
                 type="button" 
                 onClick={handleSendRequest} 
@@ -76,7 +76,7 @@ const AddFriend = ({ username, refreshFriends }) => {
               >
                 {isSubmitting ? "Sending..." : "Send Request"}
               </Button>
-            </DialogClose>
+            </div>
           </div>
         </div>
       </DialogContent>

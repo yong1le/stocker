@@ -43,7 +43,7 @@ CREATE TABLE Creates (
         ON DELETE CASCADE
 );
 CREATE TABLE Stockholding (
-    fid int  REFERENCES Folder(fid) NOT NULL
+    fid int NOT NULL REFERENCES Folder(fid)
         ON DELETE CASCADE, 
     symbol varchar(5)  REFERENCES Stock(symbol) NOT NULL, 
     share int NOT NULL CHECK (share > 0),

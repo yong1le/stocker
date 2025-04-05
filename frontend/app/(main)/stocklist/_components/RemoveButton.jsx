@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { removeStocklist } from "../server-actions";
 import { useRouter } from "next/navigation";
 
-const RemoveButton = ({ username, slid }) => {
+const RemoveButton = ({ username, slid, owner }) => {
   const router = useRouter();
 
   const handleAction = async () => {
@@ -15,11 +15,15 @@ const RemoveButton = ({ username, slid }) => {
   };
 
   return (
-    <div className="flex">
-      <Button variant="destructive" onClick={handleAction}>
-        Remove
-      </Button>
-    </div>
+    <>
+      {username === owner && (
+        <div className="flex">
+          <Button variant="destructive" onClick={handleAction}>
+            Remove
+          </Button>
+        </div>
+      )}
+    </>
   );
 };
 

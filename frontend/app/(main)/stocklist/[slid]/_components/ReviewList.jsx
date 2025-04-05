@@ -102,7 +102,7 @@ const ReviewList = ({ username, slid }) => {
                   </CardContent>
                   <RemoveReview username={username} slid={slid} reviewer={review.reviewer} owner={review.owner}/>
                 </Card>
-              ) : (<p >No reviews yet.</p>)
+              ) : (<p key={index} ></p>)
           )
         ) : (
           <p >No reviews yet.</p>

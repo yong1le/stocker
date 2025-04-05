@@ -51,7 +51,7 @@ const StockListPage = async () => {
                   <ShareList username={user} slid={e.slid} owner={e.username}/>
                 </TableCell>
                 <TableCell>
-                  <RemoveButton username={e.username} slid={e.slid} />
+                  <RemoveButton username={user} slid={e.slid} owner={e.username}/>
                 </TableCell>
               </TableRow>
             ))}

@@ -29,7 +29,7 @@ const StockHoldingList = ({ stocks }) => {
                 <Link href={`/stock/${e.symbol}`}>{e.symbol}</Link>
               </TableCell>
               <TableCell>{e.share}</TableCell>
-              <TableCell className="text-right">{e.value}</TableCell>
+              <TableCell className="text-right">{Number(e.value).toFixed(2)}</TableCell>
             </TableRow>
           ))}
       </TableBody>
