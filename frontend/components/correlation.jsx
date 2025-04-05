@@ -15,7 +15,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-const CorrelationMatrix = ({ username, pid }) => {
+const CorrelationMatrix = ({ username, pid, type }) => {
   const [chartData, setChartData] = useState(null);
   const [interval, setInterval] = useState(365);
   const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +62,9 @@ const CorrelationMatrix = ({ username, pid }) => {
       <div>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="sm">
-            <h4 className="text-sm font-semibold">Portfolio Statistics</h4>
+            <h4 className="text-sm font-semibold">
+              {type} Statistics
+              </h4>
             {isOpen ? (
               <ChevronUp className="h-4 w-4" />
             ) : (

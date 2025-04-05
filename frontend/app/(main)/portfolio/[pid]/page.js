@@ -74,8 +74,8 @@ const PortfolioView = async ({ params }) => {
 
   return (
     <div className="m-5">
-      <Card className="p-4 flex flex-row gap-5">
-        <div className="w-4/5">
+      <Card className="p-4 flex flex-row gap-5 justify-between">
+        <div className="w-7/8">
           {portfolio && (
             <div className="flex flex-col gap-3">
               <CardTitle className="text-4xl">
@@ -85,7 +85,7 @@ const PortfolioView = async ({ params }) => {
                 <p>Cash: ${Number(portfolio.amount).toFixed(2)}</p>
               </div>
 
-              <CorrelationMatrix username={user} pid={pid} />
+              <CorrelationMatrix username={user} pid={pid} type={"Portfolio"}/>
 
               <div className="flex flex-col gap-2">
                 <StockHoldingList stocks={portfolio.stocks}/>
@@ -93,7 +93,7 @@ const PortfolioView = async ({ params }) => {
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 ">
           <Link href={`/portfolio/${pid}/transactions`}>
             <Button className="w-full">Transactions</Button>
           </Link>

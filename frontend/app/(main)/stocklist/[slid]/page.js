@@ -48,6 +48,7 @@ const StocklistView = async ({ params }) => {
 
   const stocklist = await getStocklistInfo(user, slid);
   const stocks = await getStocks();
+  console.log(stocklist)
 
   return (
     <div className="m-5 flex flex-col gap-5">
@@ -57,20 +58,20 @@ const StocklistView = async ({ params }) => {
             <CardTitle className="text-4xl">
               <div className="flex justify-between">
 
-                {stocklist.name}
+                {stocklist.name} - ${Number(stocklist.marketvalue).toFixed(2)}
 
-                  {user === stocklist.username ? (
-                    <div className="flex flex-row">
-                      <Visibility visibility={stocklist.visibility} slid={slid} username={user} />
-                      <StocklistAddAction username={user} slid={slid} stocks={stocks} />
-                    </div>
-                  ) :
-                    (<></>)
-                  }
+                {user === stocklist.username ? (
+                  <div className="flex flex-row">
+                    <Visibility visibility={stocklist.visibility} slid={slid} username={user} />
+                    <StocklistAddAction username={user} slid={slid} stocks={stocks} />
+                  </div>
+                ) :
+                  (<div className="text-lg">Owner of Stock List: {stocklist.username}</div>)
+                }
               </div>
             </CardTitle>
 
-            <CorrelationMatrix username={user} pid={slid} />
+            <CorrelationMatrix username={stocklist.username} pid={slid} type={"Stocklist"} />
 
             <div className="flex flex-col gap-2">
               <StockHoldingList stocks={stocklist.stocks} />

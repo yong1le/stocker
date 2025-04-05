@@ -53,7 +53,7 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
 
             <Select onValueChange={setSelectedPortfolio}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select account" />
+                <SelectValue placeholder="Bank Account" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem key={`portfolio-bank`} value={"bank"}>

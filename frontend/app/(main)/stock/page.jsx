@@ -29,7 +29,7 @@ const StocksPage = async () => {
     <div className="p-4 flex flex-col gap-4">
       <NewStockAction stocks={stocks}/>
       <Table>
-        <TableCaption>A List of your stocks</TableCaption>
+        <TableCaption>A List of stocks</TableCaption>
         <TableHeader className="bg-stone-100">
           <TableRow>
             <TableHead className="w-[100px]">Symbol</TableHead>

@@ -41,9 +41,9 @@ const TransactionsPage = async ({ params }) => {
   return (
     <div>
       <Table>
-        <TableCaption>
+        <TableCaption className="flex">
           <Link href={`/portfolio/${pid}`}>
-            <Button className="hover:cursor-pointer ">Back</Button>
+            <Button className="hover:cursor-pointer  ">Back</Button>
           </Link>
         </TableCaption>
         <TableHeader className="bg-stone-100">

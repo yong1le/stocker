@@ -13,7 +13,7 @@ import Link from "next/link";
 const StockHoldingList = ({ stocks }) => {
   return (
     <Table>
-      <TableCaption>A List of your stocks</TableCaption>
+      <TableCaption>A List of stocks</TableCaption>
       <TableHeader className="bg-stone-100">
         <TableRow>
           <TableHead className="w-[100px]">Symbol</TableHead>
