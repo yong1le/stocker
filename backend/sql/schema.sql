@@ -5,10 +5,12 @@ CREATE TABLE Useraccount (
     lname varchar(25), 
     pass_word varchar(50)
 );
+
 CREATE TABLE Folder (
     fid SERIAL PRIMARY KEY, 
     folder_name varchar(25)
 );
+
 CREATE TABLE Portfolio (
     pid SERIAL PRIMARY KEY, 
     amount float,
@@ -16,6 +18,7 @@ CREATE TABLE Portfolio (
     FOREIGN KEY (pid) REFERENCES Folder(fid)
         ON DELETE CASCADE
 );
+
 CREATE TYPE vis_enum AS ENUM ('private', 'shared', 'public');
 CREATE TABLE Stocklist (
     slid SERIAL PRIMARY KEY, 
@@ -23,9 +26,11 @@ CREATE TABLE Stocklist (
     FOREIGN KEY (slid) REFERENCES Folder(fid)
         ON DELETE CASCADE
 );
+
 CREATE TABLE Stock (
     symbol varchar(5) PRIMARY KEY
 );
+
 CREATE TABLE Stockdata (
     symbol varchar(5) REFERENCES Stock(symbol), 
     time_stamp date, 
@@ -36,12 +41,14 @@ CREATE TABLE Stockdata (
     volume int, 
     PRIMARY KEY(symbol, time_stamp)
 );
+
 CREATE TABLE Creates (
     username varchar(25)  REFERENCES Useraccount(username) NOT NULL, 
     fid int NOT NULL,
     FOREIGN KEY (fid) REFERENCES Folder(fid)
         ON DELETE CASCADE
 );
+
 CREATE TABLE Stockholding (
     fid int NOT NULL REFERENCES Folder(fid)
         ON DELETE CASCADE, 
@@ -49,8 +56,24 @@ CREATE TABLE Stockholding (
     share int NOT NULL CHECK (share > 0),
     PRIMARY KEY (fid, symbol)
 );
-CREATE TYPE friend_enum AS ENUM ('pending', 'accepted', 'rejected', 'removed');
+-- Trigger to delete the stockholding if a user sells all shares
+CREATE OR REPLACE FUNCTION CheckStockHoldingSharesFunction()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.share = 0 THEN
+        DELETE FROM Stockholding sh
+        WHERE sh.fid = NEW.fid AND sh.symbol = NEW.symbol;
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE TRIGGER CheckStockHoldingSharesGreaterZero
+BEFORE UPDATE OF share ON Stockholding
+FOR EACH ROW
+EXECUTE FUNCTION CheckStockHoldingSharesFunction();
 
+CREATE TYPE friend_enum AS ENUM ('pending', 'accepted', 'rejected', 'removed');
 CREATE Table Friends (
     uid1 VARCHAR(25) REFERENCES Useraccount(username),
     uid2 VARCHAR(25) REFERENCES Useraccount(username),
@@ -88,5 +111,8 @@ CREATE Table Transaction (
         ON DELETE CASCADE,
     stock_symbol VARCHAR(5) REFERENCES Stock(symbol)
         ON DELETE CASCADE,
-    stock_shares int
+    stock_shares int,
+    CHECK ((NOT transaction_type = 'bank') OR (other_pid IS NULL AND stock_symbol IS NULL AND stock_shares IS NULL)),
+    CHECK ((NOT transaction_type = 'transfer') OR (other_pid IS NOT NULL AND stock_symbol IS NULL AND stock_shares IS NULL)),
+    CHECK ((NOT transaction_type = 'stock') OR (other_pid IS NULL AND stock_symbol IS NOT NULL AND stock_shares IS NOT NULL))
 );

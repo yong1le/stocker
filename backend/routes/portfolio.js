@@ -500,36 +500,14 @@ portfolio.delete("/sell", async (req, res) => {
     )
       throw Error(`${username} is not the creator of portfolio ${pid}`);
 
-    const holding = await client.query(
+    await client.query(
       `
-      SELECT * FROM Stockholding
-      WHERE fid = $1 AND symbol = $2
-      `,
-      [pid, symbol]
-    );
-    if (holding.rowCount === 0)
-      throw Error(`${pid} does not have holdings for ${symbol}`);
-
-    let result;
-    if (holding.rows[0].share == shares)
-      result = await client.query(
-        `
-        DELETE FROM Stockholding
-        WHERE fid = $1 AND symbol = $2
-      `,
-        [pid, symbol]
-      );
-    else
-      result = await client.query(
-        `
       UPDATE Stockholding
       SET share = share - $3
       WHERE fid = $1 AND symbol = $2
       `,
-        [pid, symbol, shares]
-      );
-
-    if (result.rowCount === 0) throw Error(`Error updating Stockholding`);
+      [pid, symbol, shares]
+    );
 
     const price = await client.query(
       `
