@@ -44,7 +44,7 @@ CREATE TABLE Stockdata (
 
 CREATE TABLE Creates (
     username varchar(25)  REFERENCES Useraccount(username) NOT NULL, 
-    fid int NOT NULL,
+    fid int PRIMARY KEY,
     FOREIGN KEY (fid) REFERENCES Folder(fid)
         ON DELETE CASCADE
 );
