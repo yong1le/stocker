@@ -1,6 +1,6 @@
 CREATE MATERIALIZED VIEW StockPrices AS
 (
-      SELECT symbol, close FROM (
+      SELECT symbol, close, time_stamp FROM (
         Stockdata s1 NATURAL JOIN (
           SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
           FROM Stockdata s2
