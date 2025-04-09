@@ -198,18 +198,8 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     )
       NATURAL LEFT JOIN
       (
-        SELECT fid, symbol, share, share * close AS value  FROM (
-          Stockholding NATURAL JOIN
-          (
-            SELECT symbol, close FROM (
-              Stockdata s1 NATURAL JOIN (
-                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-                FROM Stockdata s2
-                GROUP BY symbol 
-              )
-            )
-          )
-        )
+        SELECT fid, symbol, share, share * close AS value
+        FROM Stockholding NATURAL JOIN StockPrices
       )
     )
     `,
@@ -219,34 +209,25 @@ stocklist.get('/view/one/:username/:slid', async (req, res) => {
     if (result.rowCount === 0)
       throw Error("This stock list does not belong to this user.");
 
-        // Get the market value
-        const mv = await query(
-          `
-          SELECT slid, COALESCE(SUM(value),0) AS value
-          FROM (
-            SELECT slid, close * share as value
-            FROM (
-              (
-                (SELECT * FROM Stocklist WHERE slid = $1)
-                LEFT JOIN Stockholding
-                ON fid = slid
-              ) NATURAL LEFT JOIN
-              (
-                SELECT symbol, close FROM (
-                  Stockdata s1 NATURAL JOIN (
-                    SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-                    FROM Stockdata s2
-                    GROUP BY symbol 
-                  )
-                )
-              )
-            )
-          )
-          GROUP BY slid
-          `,
-    
-          [slid]
-        );
+    // Get the market value
+    const mv = await query(
+      `
+      SELECT slid, COALESCE(SUM(value),0) AS value
+      FROM (
+        SELECT slid, close * share as value
+        FROM (
+          (
+            (SELECT * FROM Stocklist WHERE slid = $1)
+            LEFT JOIN Stockholding
+            ON fid = slid
+          ) NATURAL LEFT JOIN StockPrices
+        )
+      )
+      GROUP BY slid
+      `,
+
+      [slid]
+    );
 
     res.json({
       slid: result.rows[0].slid,
@@ -459,24 +440,21 @@ stocklist.post("/add", async (req, res) => {
       `,
       [slid, symbol]
     )
-    // Check if this stocklist already holds the share
-    if (userstock.rowCount === 0) {
-      await client.query(
-        `
+    if (
+      (
+        await client.query(
+          `
       INSERT INTO Stockholding
       VALUES ($1, $2, $3)
+      ON CONFLICT (fid, symbol) 
+      DO UPDATE SET share = Stockholding.share + EXCLUDED.share
+      RETURNING *
       `,
-        [slid, symbol, shares]
-      );
-    } else {
-      await client.query(
-        `
-      UPDATE Stockholding
-      SET share = share + $3
-      WHERE fid = $1 AND symbol = $2
-      `,
-        [slid, symbol, shares]
-      );
+          [slid, symbol, shares]
+        )
+      ).rowCount === 0
+    ) {
+      throw Error(`Failed to add shares for ${symbol}`);
     }
 
     await client.query("COMMIT");

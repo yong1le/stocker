@@ -18,18 +18,10 @@ import {
   SelectValue,
   SelectTrigger,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { DialogClose } from "@radix-ui/react-dialog";
-import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
 import { createStockRecord } from "../server-actions";
 const shortFormat = new Intl.DateTimeFormat("en-US", {
   dateStyle: "short",
@@ -38,14 +30,13 @@ const shortFormat = new Intl.DateTimeFormat("en-US", {
 const NewStockAction = ({ stocks }) => {
   const router = useRouter();
   const [selectedStock, setSelectedStock] = useState(null);
-  const [date, setDate] = useState();
-
   const newStockAction = async (data) => {
     const open = data.get("open");
     const high = data.get("high");
     const low = data.get("low");
     const close = data.get("close");
     const volume = data.get("volume");
+    const date = data.get("date");
 
     const success = await createStockRecord(
       date,
@@ -91,28 +82,7 @@ const NewStockAction = ({ stocks }) => {
               </Select>
             </div>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon />
-                  {date ? shortFormat.format(date) : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <input type="date" name="date" id="date"/>
 
             <div className="grid gap-2 my-2">
               <div className="grid gap-2 my-2">

@@ -134,18 +134,8 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
       )
       NATURAL LEFT JOIN
       (
-        SELECT fid, symbol, share, share * close AS value, close  FROM (
-          Stockholding NATURAL JOIN
-          (
-            SELECT symbol, close FROM (
-              Stockdata s1 NATURAL JOIN (
-                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-                FROM Stockdata s2
-                GROUP BY symbol 
-              )
-            )
-          )
-        )
+        SELECT fid, symbol, share, share * close AS value, close
+        FROM Stockholding NATURAL JOIN StockPrices
       )
     )
     `,
@@ -166,16 +156,7 @@ portfolio.get("/view/one/:username/:pid", async (req, res) => {
             (SELECT * FROM Portfolio WHERE pid = $1)
             LEFT JOIN Stockholding
             ON fid = pid
-          ) NATURAL LEFT JOIN
-          (
-            SELECT symbol, close FROM (
-              Stockdata s1 NATURAL JOIN (
-                SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-                FROM Stockdata s2
-                GROUP BY symbol 
-              )
-            )
-          )
+          ) NATURAL LEFT JOIN StockPrices
         )
       )
       GROUP BY pid, amount
@@ -401,38 +382,28 @@ portfolio.post("/buy", async (req, res) => {
     )
       throw Error(`${username} is not the creator of portfolio ${pid}`);
 
-    // Check if this portfolio already holds the share
     if (
       (
         await client.query(
           `
-      UPDATE Stockholding
-      SET share = share + $3
-      WHERE fid = $1 AND symbol = $2
+      INSERT INTO Stockholding
+      VALUES ($1, $2, $3)
+      ON CONFLICT (fid, symbol) 
+      DO UPDATE SET share = Stockholding.share + EXCLUDED.share
+      RETURNING *
       `,
           [pid, symbol, shares]
         )
       ).rowCount === 0
     ) {
-      await client.query(
-        `
-      INSERT INTO Stockholding
-      VALUES ($1, $2, $3)
-      `,
-        [pid, symbol, shares]
-      );
+      throw Error(`Failed to add shares for ${symbol}`);
     }
 
     const price = await client.query(
       `
-      SELECT close FROM (
-        Stockdata s1 NATURAL JOIN (
-          SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-          FROM Stockdata s2
-          WHERE s2.symbol = $1
-          GROUP BY symbol 
-        )
-      )
+      SELECT close
+      FROM StockPrices
+      WHERE symbol = $1
         `,
       [symbol]
     );
@@ -511,14 +482,9 @@ portfolio.delete("/sell", async (req, res) => {
 
     const price = await client.query(
       `
-      SELECT close FROM (
-        Stockdata s1 NATURAL JOIN (
-          SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-          FROM Stockdata s2
-          WHERE s2.symbol = $1
-          GROUP BY symbol 
-        )
-      )
+      SELECT close
+      FROM StockPrices
+      WHERE symbol = $1
         `,
       [symbol]
     );

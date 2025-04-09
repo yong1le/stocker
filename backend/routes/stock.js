@@ -7,9 +7,10 @@ export const stock = Router();
 stock.post("/create", async (req, res) => {
   const { date, symbol, open, high, low, close, volume } = req.body;
 
-  console.log(date, symbol, open, high, low, close, volume);
+  const client = await getClient('BEGIN');
+  await client.query("BEGIN")
   try {
-    const result = await query(
+    const result = await client.query(
       `
         INSERT INTO Stockdata (time_stamp, symbol, open, high, low, close, volume)
         VALUES
@@ -17,7 +18,7 @@ stock.post("/create", async (req, res) => {
         RETURNING *;
       `,
       [
-        new Date(date),
+        date,
         symbol,
         Number(open),
         Number(high),
@@ -27,12 +28,28 @@ stock.post("/create", async (req, res) => {
       ]
     );
 
+    await client.query(`REFRESH MATERIALIZED VIEW StockPrices`);
+
+    await client.query(
+      `
+      DELETE FROM StockCorrelation WHERE
+      s1 = $1 OR s2 = $1
+      `,
+      [symbol]
+    );
+
     if (result.rowCount === 0)
       throw Error(`Failed to insert ${symbol} @ ${date}`);
+
+    await client.query("COMMIT")
     res.send({ success: true });
   } catch (e) {
+    await client.query("ROLLBACK");
+
     console.log(e);
     res.send({ success: false }).status(400);
+  } finally {
+    client.release();
   }
 });
 
@@ -40,13 +57,7 @@ stock.get("/all", async (req, res) => {
   try {
     const result = await query(
       `
-        SELECT symbol, close AS value FROM (
-          Stockdata s1 NATURAL JOIN (
-            SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-            FROM Stockdata s2
-            GROUP BY symbol 
-          )
-        )
+        SELECT symbol, close AS value FROM StockPrices
       `
     );
 
@@ -64,14 +75,9 @@ stock.get("/value/:symbol", async (req, res) => {
   try {
     const result = await query(
       `
-        SELECT symbol, close FROM (
-          Stockdata s1 NATURAL JOIN (
-            SELECT s2.symbol, MAX(s2.time_stamp) as time_stamp
-            FROM Stockdata s2
-            WHERE symbol=$1
-            GROUP BY symbol 
-          )
-        )
+        SELECT symbol, close
+        FROM StockPrices
+        WHERE symbol = $1
       `,
       [symbol]
     );
@@ -102,8 +108,8 @@ stock.get("/performance/past/:symbol/:interval", async (req, res) => {
     const result = await query(
       `
     WITH LastDate AS (
-      SELECT MAX(time_stamp) as last_date
-      FROM Stockdata
+      SELECT time_stamp as last_date
+      FROM StockPrices
       WHERE symbol = $1
     )  
     SELECT EXTRACT(EPOCH FROM time_stamp) AS time_stamp, symbol, close
@@ -185,12 +191,14 @@ stock.get("/statistic/:symbol/:interval", async (req, res) => {
         WHERE symbol = $1
       ),
       Market AS (
-        SELECT symbol, time_stamp, close FROM stockdata
+        SELECT time_stamp, SUM(close) AS close
+        FROM stockdata
         WHERE symbol != $1
+        GROUP BY time_stamp
       ),
       LastDate AS (
-        SELECT MAX(time_stamp) as last_date
-        FROM Stockdata
+        SELECT time_stamp as last_date
+        FROM StockPrices
         WHERE symbol = $1
       )  
       SELECT s.symbol, corr(m.close, s.close) AS beta, stddev(s.close) / avg(s.close) AS cov

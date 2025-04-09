@@ -136,8 +136,8 @@ const Stock = () => {
         <h1 className="font-bold text-4xl">{symbol}</h1>
         {statistic && (
           <div>
-            <p>Stock COV: {statistic.cov}</p>
-            <p>Stock Beta: {statistic.beta}</p>
+            <p>Stock COV: {statistic.cov || "N/A"}</p>
+            <p>Stock Beta: {statistic.beta || "N/A"}</p>
           </div>
         )}
       </div>

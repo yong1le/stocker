@@ -16,7 +16,7 @@ export const createStockRecord = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        date: date.toString(),
+        date,
         symbol,
         open,
         high,
