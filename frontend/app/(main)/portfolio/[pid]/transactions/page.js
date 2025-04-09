@@ -58,7 +58,7 @@ const TransactionsPage = async ({ params }) => {
         <TableBody>
           {transactions &&
             transactions.map((e, i) => (
-              <TableRow>
+              <TableRow key={i}>
                 <TableCell>{e.transaction_type.toUpperCase()}</TableCell>
                 <TableCell>{Number(e.amount).toFixed(2)}</TableCell>
                 <TableCell>
