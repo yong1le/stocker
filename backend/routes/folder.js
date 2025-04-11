@@ -9,51 +9,77 @@ folder.get("/statistic/:username/:pid/:interval", async (req, res) => {
   const interval = req.params.interval;
 
   try {
-    const result = await query(
+    await query(
       `
-      WITH FolderStock AS (
-        SELECT symbol, time_stamp, close FROM stockdata
+      WITH FolderSymbols AS (
+          SELECT symbol
+          FROM Stockholding
+          WHERE fid = $1
+      ), 
+      FolderStock AS (
+        SELECT symbol, time_stamp, close
+        FROM stockdata
         WHERE symbol IN (
-          SELECT DISTINCT symbol FROM
-          Stockholding s NATURAL JOIN Creates
-          WHERE s.fid = $2 AND username = $1
+          SELECT symbol FROM Stockholding WHERE fid = $1
         )
       ),
-      CorrelationCache AS (
-        SELECT * FROM StockCorrelation
-        WHERE (
-          s1 IN (SELECT symbol FROM FolderStock) OR
-          s2 IN (SELECT symbol FROM FolderStock)
-        ) AND interval_value = ($3 || ' days')::INTERVAL
+      StockPairs AS (
+        SELECT f1.symbol AS s1, f2.symbol AS s2
+        FROM FolderSymbols f1
+        JOIN FolderSymbols f2
+        ON f1.symbol < f2.symbol
+      ),
+      MissingPairs AS (
+        SELECT sp.s1, sp.s2
+        FROM StockPairs sp
+        WHERE NOT EXISTS (
+          SELECT 1 FROM StockCorrelation sc
+          WHERE sc.s1 = sp.s1 AND sc.s2 = sp.s2
+          AND sc.interval_value = ($2 || ' days')::INTERVAL
+        )
       ),
       LastDate AS (
-          SELECT MAX(time_stamp) as last_date
-          FROM FolderStock
-      ),
-      NewCorrelations AS (
-        INSERT INTO StockCorrelation (
-            SELECT p1.symbol AS s1, p2.symbol AS s2, ($3 || ' days')::INTERVAL AS interval_value, corr(p1.close, p2.close) AS corr
-            FROM
-            FolderStock p1 JOIN FolderStock p2
-            ON p1.time_stamp = p2.time_stamp
-            WHERE p1.time_stamp >= (
-                SELECT last_date - ($3 || ' days')::INTERVAL
-                FROM LastDate
-            ) AND NOT EXISTS (
-              SELECT 1 FROM CorrelationCache cc
-              WHERE (s1 = p1.symbol AND s2 = p2.symbol)
-              OR (s1 = p2.symbol AND s2 = p1.symbol)
-            )
-            GROUP BY p1.symbol, p2.symbol
-            ORDER BY p1.symbol, p2.symbol
-        )
-        RETURNING *
+        SELECT MAX(time_stamp) as last_date FROM FolderStock
       )
-      SELECT * FROM CorrelationCache UNION SELECT * FROM NewCorrelations ORDER BY s1,s2;
+      INSERT INTO StockCorrelation
+      SELECT mp.s1, mp.s2, ($2 || ' days')::INTERVAL, corr(p1.close, p2.close)
+      FROM MissingPairs mp
+      JOIN FolderStock p1 ON p1.symbol = mp.s1
+      JOIN FolderStock p2 ON p2.symbol = mp.s2 AND p1.time_stamp = p2.time_stamp
+      WHERE p1.time_stamp >= (
+        SELECT last_date - ($2 || ' days')::INTERVAL FROM LastDate
+      )
+      GROUP BY mp.s1, mp.s2;
       `,
-      [username, pid, interval]
+      [pid, interval]
     );
-    console.log(result.rows)
+
+    const result = await query(
+      `
+      WITH FolderSymbols AS (
+          SELECT symbol
+          FROM Stockholding
+          WHERE fid = $1
+      )
+      SELECT * FROM StockCorrelation
+      WHERE interval_value = ($2 || ' days')::INTERVAL
+        AND s1 IN (SELECT symbol FROM FolderSymbols)
+        AND s2 IN (SELECT symbol FROM FolderSymbols)
+        AND s1 != s2
+      UNION ALL 
+      SELECT symbol AS s1, symbol AS s2, ($2 || ' days')::INTERVAL AS interval_value, 1 AS corr FROM FolderSymbols
+      UNION ALL
+      SELECT s2 AS s1, s1 AS s2, interval_value, corr FROM StockCorrelation
+      WHERE interval_value = ($2 || ' days')::INTERVAL
+        AND s1 IN (SELECT symbol FROM FolderSymbols)
+        AND s2 IN (SELECT symbol FROM FolderSymbols)
+        AND s1 != s2
+      ORDER BY s1,s2;
+      `,
+      [pid, interval]
+    );
+
+    console.log(result.rows);
     if (result.rowCount === 0)
       throw Error(`Failed to calculate folder statistics`);
 
