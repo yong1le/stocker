@@ -10,6 +10,28 @@ PGHOST=localhost
 PGPORT=9999
 PGDATABASE=postgres
 ```
+
+```bash
+cd backend
+docker compose up -d
+cd ..
+psql -h localhost -p 9999 -U postgres
+```
+Then in the `psql` prompt
+```sql
+\i ./backend/sql/schema.sql;
+
+\copy Stock(symbol) FROM './backend/stock.csv' DELIMITER ','
+CSV HEADER;
+
+\copy Stockdata(time_stamp, open, high,
+low, close, volume, symbol) FROM './backend/SP500History.csv' DELIMITER ','
+CSV HEADER;
+
+\i ./backend/sql/cache.sql;
+
+```
+
 ## Structure
 ```bash
 backend/
@@ -20,16 +42,6 @@ backend/
   sql/            # sql files
     schema.js
   index.js
-```
-
-Be in the `psql -h localhost -p 9999 -U postgres` prompt
-```sql
-\copy Stock(symbol) FROM './backend/stock.csv' DELIMITER ','
-CSV HEADER;
-
-\copy Stockdata(time_stamp, open, high,
-low, close, volume, symbol) FROM './backend/SP500History.csv' DELIMITER ','
-CSV HEADER;
 ```
 
 ## Endpoints
