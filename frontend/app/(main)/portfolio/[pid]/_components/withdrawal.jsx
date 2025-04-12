@@ -48,7 +48,7 @@ const PortfolioWithdrawalAction = ({ username, pid }) => {
               <div className="flex items-center ">
                 <Label htmlFor="amount">Amount</Label>
               </div>
-              <Input id="amount" type="number" name="amount" required min={1} />
+              <Input id="amount" type="number" step=".01" name="amount" required min={1} />
             </div>
 
             <DialogFooter>

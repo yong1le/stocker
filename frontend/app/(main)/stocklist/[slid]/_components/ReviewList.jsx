@@ -24,6 +24,8 @@ const ReviewList = ({ username, slid }) => {
     try {
       const allReviews = await viewAllReviews(username, slid);
       setReviews(allReviews);
+
+      setContent(allReviews.find((e) => e.reviewer === username)?.content || "")
     } catch (error) {
       console.error("Failed to load reviews:", error);
     }
@@ -116,7 +118,7 @@ const ReviewList = ({ username, slid }) => {
                         <div className="space-y-4">
                           <Textarea
                             placeholder={review.content}
-                            value={review.content}
+                            value={content}
                             onChange={(e) => setContent(e.target.value)}
                             className="w-full h-24 resize-none p-2"
                           />

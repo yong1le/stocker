@@ -246,7 +246,7 @@ friend.post("/remove/:username", async (req, res) => {
       `
       UPDATE friends
       SET friend_status = 'removed', remove_time = NOW()
-      WHERE (uid2 = $1 AND uid1 = $2) AND friend_status = 'accepted'
+      WHERE (uid2 = $1 AND uid1 = $2) OR (uid2 = $2 AND uid1 = $1) AND friend_status = 'accepted'
       RETURNING *
       `,
       [username, friend]

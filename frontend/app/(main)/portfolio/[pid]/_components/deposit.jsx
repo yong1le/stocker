@@ -26,7 +26,7 @@ import { DialogClose } from "@radix-ui/react-dialog";
 
 const PortfolioDepositAction = ({ username, pid, portfolios }) => {
   const router = useRouter();
-  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [selectedPortfolio, setSelectedPortfolio] = useState("bank");
 
   const depositAction = async (data) => {
     const amount = data.get("amount");
@@ -76,7 +76,14 @@ const PortfolioDepositAction = ({ username, pid, portfolios }) => {
               <div className="flex items-center">
                 <Label htmlFor="amount">Amount</Label>
               </div>
-              <Input id="amount" type="number" name="amount" required min={1} />
+              <Input
+                id="amount"
+                type="number"
+                step=".01"
+                name="amount"
+                required
+                min={1}
+              />
             </div>
 
             <DialogFooter>
